@@ -3,7 +3,17 @@ import Foundation
 import FoundationNetworking
 #endif
 
-struct HTTPClient: Sendable {
+protocol HTTPClientProtocol: Sendable {
+    func execute(_ request: URLRequest) async throws -> (Data, HTTPURLResponse)
+    func download(
+        _ request: URLRequest,
+        to destination: URL,
+        resumeData: Data?,
+        progress: (@Sendable (Int64, Int64?) -> Void)?
+    ) async throws -> (URL, HTTPURLResponse)
+}
+
+struct HTTPClient: HTTPClientProtocol, Sendable {
     let session: URLSession
 
     init(session: URLSession = .shared) {

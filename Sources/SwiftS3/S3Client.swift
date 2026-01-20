@@ -5,7 +5,7 @@ import FoundationNetworking
 
 public final class S3Client: Sendable {
     private let configuration: S3Configuration
-    private let httpClient: HTTPClient
+    private let httpClient: any HTTPClientProtocol
     private let signer: SigV4Signer
     private let requestBuilder: RequestBuilder
     private let xmlParser: XMLResponseParser
@@ -13,6 +13,19 @@ public final class S3Client: Sendable {
     public init(configuration: S3Configuration) {
         self.configuration = configuration
         self.httpClient = HTTPClient()
+        self.signer = SigV4Signer(
+            accessKeyId: configuration.accessKeyId,
+            secretAccessKey: configuration.secretAccessKey,
+            region: configuration.region
+        )
+        self.requestBuilder = RequestBuilder(configuration: configuration)
+        self.xmlParser = XMLResponseParser()
+    }
+
+    // Internal init for testing
+    init(configuration: S3Configuration, httpClient: any HTTPClientProtocol) {
+        self.configuration = configuration
+        self.httpClient = httpClient
         self.signer = SigV4Signer(
             accessKeyId: configuration.accessKeyId,
             secretAccessKey: configuration.secretAccessKey,
@@ -316,6 +329,66 @@ public final class S3Client: Sendable {
         )
 
         let (_, response) = try await executeRequest(request, body: nil)
+        return parseObjectMetadata(from: response)
+    }
+
+    public func downloadObject(
+        bucket: String,
+        key: String,
+        to destination: URL,
+        progress: (@Sendable (Int64, Int64?) -> Void)? = nil,
+        resumeData: Data? = nil
+    ) async throws -> ObjectMetadata {
+        // If resuming, use resume data directly (contains original request)
+        if let resumeData = resumeData {
+            let (_, response) = try await httpClient.download(
+                URLRequest(url: URL(string: "https://placeholder")!), // ignored when resuming
+                to: destination,
+                resumeData: resumeData,
+                progress: progress
+            )
+
+            if response.statusCode >= 400 {
+                throw S3APIError(
+                    code: .unknown("DownloadFailed"),
+                    message: "Download failed with status \(response.statusCode)",
+                    resource: nil,
+                    requestId: nil
+                )
+            }
+
+            return parseObjectMetadata(from: response)
+        }
+
+        // Fresh download: build and sign request
+        var request = requestBuilder.buildRequest(
+            method: "GET",
+            bucket: bucket,
+            key: key,
+            queryItems: nil,
+            headers: nil,
+            body: nil
+        )
+
+        let payloadHash = Data().sha256().hexString
+        signer.sign(request: &request, date: Date(), payloadHash: payloadHash)
+
+        let (_, response) = try await httpClient.download(
+            request,
+            to: destination,
+            resumeData: nil,
+            progress: progress
+        )
+
+        if response.statusCode >= 400 {
+            throw S3APIError(
+                code: .unknown("DownloadFailed"),
+                message: "Download failed with status \(response.statusCode)",
+                resource: "/\(bucket)/\(key)",
+                requestId: nil
+            )
+        }
+
         return parseObjectMetadata(from: response)
     }
 
