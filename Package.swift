@@ -13,9 +13,15 @@ let package = Package(
             targets: ["SwiftS3"]
         )
     ],
+    dependencies: [
+        .package(url: "https://github.com/apple/swift-crypto.git", from: "3.0.0")
+    ],
     targets: [
         .target(
             name: "SwiftS3",
+            dependencies: [
+                .product(name: "Crypto", package: "swift-crypto")
+            ],
             swiftSettings: [
                 .enableExperimentalFeature("StrictConcurrency")
             ]
