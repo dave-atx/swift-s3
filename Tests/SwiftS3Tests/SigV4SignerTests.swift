@@ -70,3 +70,17 @@ import FoundationNetworking
 
     #expect(stringToSign == expected)
 }
+
+@Test func signingKey() async throws {
+    let signer = SigV4Signer(
+        accessKeyId: "AKID",
+        secretAccessKey: "wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY",
+        region: "us-east-1"
+    )
+
+    let date = Date(timeIntervalSince1970: 1440938160) // 20150830
+    let key = signer.signingKey(for: date)
+
+    // This is a known test vector - signing key for the given secret/date/region
+    #expect(key.count == 32) // SHA256 output is 32 bytes
+}

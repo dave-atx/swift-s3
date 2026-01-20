@@ -85,4 +85,14 @@ struct SigV4Signer: Sendable {
             \(canonicalRequestHash)
             """
     }
+
+    func signingKey(for date: Date) -> Data {
+        let dateStamp = dateStamp(for: date)
+        let kSecret = "AWS4\(secretAccessKey)".data(using: .utf8)!
+        let kDate = dateStamp.data(using: .utf8)!.hmacSHA256(key: kSecret)
+        let kRegion = region.data(using: .utf8)!.hmacSHA256(key: kDate)
+        let kService = service.data(using: .utf8)!.hmacSHA256(key: kRegion)
+        let kSigning = "aws4_request".data(using: .utf8)!.hmacSHA256(key: kService)
+        return kSigning
+    }
 }
