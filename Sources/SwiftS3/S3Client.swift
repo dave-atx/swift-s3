@@ -318,4 +318,25 @@ public final class S3Client: Sendable {
         let (_, response) = try await executeRequest(request, body: nil)
         return parseObjectMetadata(from: response)
     }
+
+    public func copyObject(
+        sourceBucket: String,
+        sourceKey: String,
+        destinationBucket: String,
+        destinationKey: String
+    ) async throws -> String {
+        let copySource = "/\(sourceBucket)/\(sourceKey)"
+
+        let request = requestBuilder.buildRequest(
+            method: "PUT",
+            bucket: destinationBucket,
+            key: destinationKey,
+            queryItems: nil,
+            headers: ["x-amz-copy-source": copySource],
+            body: nil
+        )
+
+        let (_, response) = try await executeRequest(request, body: nil)
+        return response.value(forHTTPHeaderField: "ETag") ?? ""
+    }
 }
