@@ -397,4 +397,33 @@ public final class S3Client: Sendable {
 
         return CompletedPart(partNumber: partNumber, etag: etag)
     }
+
+    public func completeMultipartUpload(
+        bucket: String,
+        key: String,
+        uploadId: String,
+        parts: [CompletedPart]
+    ) async throws -> String {
+        let sortedParts = parts.sorted { $0.partNumber < $1.partNumber }
+
+        var xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CompleteMultipartUpload>"
+        for part in sortedParts {
+            xml += "<Part><PartNumber>\(part.partNumber)</PartNumber><ETag>\(part.etag)</ETag></Part>"
+        }
+        xml += "</CompleteMultipartUpload>"
+
+        let body = xml.data(using: .utf8)!
+
+        let request = requestBuilder.buildRequest(
+            method: "POST",
+            bucket: bucket,
+            key: key,
+            queryItems: [URLQueryItem(name: "uploadId", value: uploadId)],
+            headers: ["Content-Type": "application/xml"],
+            body: body
+        )
+
+        let (_, response) = try await executeRequest(request, body: body)
+        return response.value(forHTTPHeaderField: "ETag") ?? ""
+    }
 }
