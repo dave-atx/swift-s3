@@ -11,3 +11,28 @@ import Testing
     #expect(error.message == "Invalid XML")
     #expect(error.responseBody == "<bad>")
 }
+
+@Test func s3APIErrorCodeMapping() async throws {
+    let error = S3APIError(
+        code: .noSuchBucket,
+        message: "Bucket not found",
+        resource: "/my-bucket",
+        requestId: "abc123"
+    )
+    #expect(error.code == .noSuchBucket)
+    #expect(error.code.rawValue == "NoSuchBucket")
+}
+
+@Test func s3APIErrorUnknownCode() async throws {
+    let error = S3APIError(
+        code: .unknown("CustomError"),
+        message: "Something custom",
+        resource: nil,
+        requestId: nil
+    )
+    if case .unknown(let code) = error.code {
+        #expect(code == "CustomError")
+    } else {
+        Issue.record("Expected unknown code")
+    }
+}
