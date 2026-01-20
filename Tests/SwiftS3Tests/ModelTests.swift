@@ -49,3 +49,21 @@ import Foundation
     #expect(metadata.contentType == "application/json")
     #expect(metadata.metadata["author"] == "test")
 }
+
+@Test func multipartUploadProperties() async throws {
+    let upload = MultipartUpload(uploadId: "upload-123", key: "large-file.bin", initiated: nil)
+    #expect(upload.uploadId == "upload-123")
+    #expect(upload.key == "large-file.bin")
+}
+
+@Test func partProperties() async throws {
+    let part = Part(partNumber: 1, etag: "\"part-etag\"", size: 5_242_880, lastModified: nil)
+    #expect(part.partNumber == 1)
+    #expect(part.size == 5_242_880)
+}
+
+@Test func completedPartProperties() async throws {
+    let part = CompletedPart(partNumber: 2, etag: "\"completed-etag\"")
+    #expect(part.partNumber == 2)
+    #expect(part.etag == "\"completed-etag\"")
+}
