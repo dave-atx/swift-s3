@@ -34,3 +34,18 @@ import Foundation
     #expect(obj.size == 1024)
     #expect(obj.storageClass == "STANDARD")
 }
+
+@Test func objectMetadataProperties() async throws {
+    let metadata = ObjectMetadata(
+        contentLength: 2048,
+        contentType: "application/json",
+        etag: "\"def456\"",
+        lastModified: nil,
+        versionId: "v1",
+        metadata: ["author": "test"]
+    )
+
+    #expect(metadata.contentLength == 2048)
+    #expect(metadata.contentType == "application/json")
+    #expect(metadata.metadata["author"] == "test")
+}
