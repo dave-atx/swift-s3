@@ -147,4 +147,59 @@ public final class S3Client: Sendable {
         let (data, _) = try await executeRequest(request, body: nil)
         return try xmlParser.parseListObjects(from: data)
     }
+
+    public func getObject(
+        bucket: String,
+        key: String,
+        range: Range<Int64>? = nil
+    ) async throws -> (data: Data, metadata: ObjectMetadata) {
+        var headers: [String: String] = [:]
+        if let range = range {
+            headers["Range"] = "bytes=\(range.lowerBound)-\(range.upperBound - 1)"
+        }
+
+        let request = requestBuilder.buildRequest(
+            method: "GET",
+            bucket: bucket,
+            key: key,
+            queryItems: nil,
+            headers: headers.isEmpty ? nil : headers,
+            body: nil
+        )
+
+        let (data, response) = try await executeRequest(request, body: nil)
+        let metadata = parseObjectMetadata(from: response)
+
+        return (data, metadata)
+    }
+
+    private func parseObjectMetadata(from response: HTTPURLResponse) -> ObjectMetadata {
+        let contentLength = Int64(response.value(forHTTPHeaderField: "Content-Length") ?? "0") ?? 0
+
+        var customMetadata: [String: String] = [:]
+        for (key, value) in response.allHeaderFields {
+            if let keyString = key as? String,
+               keyString.lowercased().hasPrefix("x-amz-meta-") {
+                let metaKey = String(keyString.dropFirst("x-amz-meta-".count))
+                customMetadata[metaKey] = value as? String
+            }
+        }
+
+        return ObjectMetadata(
+            contentLength: contentLength,
+            contentType: response.value(forHTTPHeaderField: "Content-Type"),
+            etag: response.value(forHTTPHeaderField: "ETag"),
+            lastModified: parseHTTPDate(response.value(forHTTPHeaderField: "Last-Modified")),
+            versionId: response.value(forHTTPHeaderField: "x-amz-version-id"),
+            metadata: customMetadata
+        )
+    }
+
+    private func parseHTTPDate(_ string: String?) -> Date? {
+        guard let string = string else { return nil }
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "EEE, dd MMM yyyy HH:mm:ss zzz"
+        return formatter.date(from: string)
+    }
 }
