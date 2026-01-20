@@ -443,4 +443,32 @@ public final class S3Client: Sendable {
 
         _ = try await executeRequest(request, body: nil)
     }
+
+    public func listMultipartUploads(
+        bucket: String,
+        prefix: String? = nil,
+        maxUploads: Int? = nil
+    ) async throws -> ListMultipartUploadsResult {
+        var queryItems: [URLQueryItem] = [
+            URLQueryItem(name: "uploads", value: nil)
+        ]
+        if let prefix = prefix {
+            queryItems.append(URLQueryItem(name: "prefix", value: prefix))
+        }
+        if let maxUploads = maxUploads {
+            queryItems.append(URLQueryItem(name: "max-uploads", value: String(maxUploads)))
+        }
+
+        let request = requestBuilder.buildRequest(
+            method: "GET",
+            bucket: bucket,
+            key: nil,
+            queryItems: queryItems,
+            headers: nil,
+            body: nil
+        )
+
+        let (data, _) = try await executeRequest(request, body: nil)
+        return try xmlParser.parseListMultipartUploads(from: data)
+    }
 }
