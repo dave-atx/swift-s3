@@ -52,3 +52,42 @@ import Foundation
     #expect(result.owner?.id == "owner-id-123")
     #expect(result.owner?.displayName == "Alice")
 }
+
+@Test func parseListObjectsResponse() async throws {
+    let xml = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <ListBucketResult>
+            <Name>my-bucket</Name>
+            <Prefix>photos/</Prefix>
+            <KeyCount>2</KeyCount>
+            <MaxKeys>1000</MaxKeys>
+            <IsTruncated>false</IsTruncated>
+            <Contents>
+                <Key>photos/image1.jpg</Key>
+                <LastModified>2009-10-12T17:50:30.000Z</LastModified>
+                <ETag>"fba9dede5f27731c9771645a39863328"</ETag>
+                <Size>434234</Size>
+                <StorageClass>STANDARD</StorageClass>
+            </Contents>
+            <Contents>
+                <Key>photos/image2.jpg</Key>
+                <LastModified>2009-10-12T17:50:31.000Z</LastModified>
+                <ETag>"fba9dede5f27731c9771645a39863329"</ETag>
+                <Size>123456</Size>
+                <StorageClass>STANDARD</StorageClass>
+            </Contents>
+        </ListBucketResult>
+        """
+
+    let parser = XMLResponseParser()
+    let result: ListObjectsResult = try parser.parseListObjects(from: xml.data(using: .utf8)!)
+
+    #expect(result.objects.count == 2)
+    #expect(result.objects[0].key == "photos/image1.jpg")
+    #expect(result.objects[0].size == 434234)
+    #expect(result.objects[0].etag == "\"fba9dede5f27731c9771645a39863328\"")
+    #expect(result.objects[1].key == "photos/image2.jpg")
+    #expect(result.name == "my-bucket")
+    #expect(result.prefix == "photos/")
+    #expect(result.isTruncated == false)
+}

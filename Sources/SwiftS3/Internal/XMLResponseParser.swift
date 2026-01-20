@@ -69,6 +69,25 @@ final class XMLResponseParser: NSObject, XMLParserDelegate, @unchecked Sendable 
             continuationToken: delegate.continuationToken
         )
     }
+
+    func parseListObjects(from data: Data) throws -> ListObjectsResult {
+        let delegate = ListObjectsParserDelegate()
+        let parser = XMLParser(data: data)
+        parser.delegate = delegate
+
+        guard parser.parse() else {
+            throw S3ParsingError(message: "Failed to parse ListObjects XML", responseBody: String(data: data, encoding: .utf8))
+        }
+
+        return ListObjectsResult(
+            name: delegate.name ?? "",
+            prefix: delegate.prefix,
+            objects: delegate.objects,
+            commonPrefixes: delegate.commonPrefixes,
+            isTruncated: delegate.isTruncated,
+            continuationToken: delegate.continuationToken
+        )
+    }
 }
 
 private final class ListBucketsParserDelegate: NSObject, XMLParserDelegate {
@@ -142,6 +161,100 @@ private final class ListBucketsParserDelegate: NSObject, XMLParserDelegate {
             }
         case "ContinuationToken":
             continuationToken = trimmed.isEmpty ? nil : trimmed
+        default:
+            break
+        }
+
+        elementStack.removeLast()
+        currentText = ""
+    }
+}
+
+private final class ListObjectsParserDelegate: NSObject, XMLParserDelegate {
+    var objects: [S3Object] = []
+    var commonPrefixes: [String] = []
+    var name: String?
+    var prefix: String?
+    var isTruncated: Bool = false
+    var continuationToken: String?
+
+    private var currentElement = ""
+    private var currentText = ""
+    private var elementStack: [String] = []
+
+    // Current object being parsed
+    private var currentKey: String?
+    private var currentLastModified: Date?
+    private var currentEtag: String?
+    private var currentSize: Int64?
+    private var currentStorageClass: String?
+
+    nonisolated(unsafe) private static let dateFormatter: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter
+    }()
+
+    nonisolated(unsafe) private static let dateFormatterNoFraction: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime]
+        return formatter
+    }()
+
+    func parser(_ parser: XMLParser, didStartElement elementName: String, namespaceURI: String?, qualifiedName qName: String?, attributes attributeDict: [String: String] = [:]) {
+        currentElement = elementName
+        currentText = ""
+        elementStack.append(elementName)
+
+        if elementName == "Contents" {
+            currentKey = nil
+            currentLastModified = nil
+            currentEtag = nil
+            currentSize = nil
+            currentStorageClass = nil
+        }
+    }
+
+    func parser(_ parser: XMLParser, foundCharacters string: String) {
+        currentText += string
+    }
+
+    func parser(_ parser: XMLParser, didEndElement elementName: String, namespaceURI: String?, qualifiedName qName: String?) {
+        let trimmed = currentText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let parent = elementStack.count >= 2 ? elementStack[elementStack.count - 2] : ""
+
+        switch elementName {
+        case "Name" where parent == "ListBucketResult":
+            name = trimmed
+        case "Prefix" where parent == "ListBucketResult":
+            prefix = trimmed.isEmpty ? nil : trimmed
+        case "IsTruncated":
+            isTruncated = trimmed.lowercased() == "true"
+        case "NextContinuationToken":
+            continuationToken = trimmed.isEmpty ? nil : trimmed
+        case "Key" where parent == "Contents":
+            currentKey = trimmed
+        case "LastModified" where parent == "Contents":
+            currentLastModified = Self.dateFormatter.date(from: trimmed) ?? Self.dateFormatterNoFraction.date(from: trimmed)
+        case "ETag" where parent == "Contents":
+            currentEtag = trimmed
+        case "Size" where parent == "Contents":
+            currentSize = Int64(trimmed)
+        case "StorageClass" where parent == "Contents":
+            currentStorageClass = trimmed
+        case "Contents":
+            if let key = currentKey {
+                objects.append(S3Object(
+                    key: key,
+                    lastModified: currentLastModified,
+                    etag: currentEtag,
+                    size: currentSize,
+                    storageClass: currentStorageClass,
+                    owner: nil
+                ))
+            }
+        case "Prefix" where parent == "CommonPrefixes":
+            commonPrefixes.append(trimmed)
         default:
             break
         }
