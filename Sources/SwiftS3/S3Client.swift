@@ -471,4 +471,34 @@ public final class S3Client: Sendable {
         let (data, _) = try await executeRequest(request, body: nil)
         return try xmlParser.parseListMultipartUploads(from: data)
     }
+
+    public func listParts(
+        bucket: String,
+        key: String,
+        uploadId: String,
+        maxParts: Int? = nil,
+        partNumberMarker: Int? = nil
+    ) async throws -> ListPartsResult {
+        var queryItems: [URLQueryItem] = [
+            URLQueryItem(name: "uploadId", value: uploadId)
+        ]
+        if let maxParts = maxParts {
+            queryItems.append(URLQueryItem(name: "max-parts", value: String(maxParts)))
+        }
+        if let partNumberMarker = partNumberMarker {
+            queryItems.append(URLQueryItem(name: "part-number-marker", value: String(partNumberMarker)))
+        }
+
+        let request = requestBuilder.buildRequest(
+            method: "GET",
+            bucket: bucket,
+            key: key,
+            queryItems: queryItems,
+            headers: nil,
+            body: nil
+        )
+
+        let (data, _) = try await executeRequest(request, body: nil)
+        return try xmlParser.parseListParts(from: data)
+    }
 }
