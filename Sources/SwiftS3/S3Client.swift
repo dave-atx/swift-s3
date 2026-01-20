@@ -372,4 +372,29 @@ public final class S3Client: Sendable {
         let (data, _) = try await executeRequest(request, body: nil)
         return try xmlParser.parseInitiateMultipartUpload(from: data)
     }
+
+    public func uploadPart(
+        bucket: String,
+        key: String,
+        uploadId: String,
+        partNumber: Int,
+        data: Data
+    ) async throws -> CompletedPart {
+        let request = requestBuilder.buildRequest(
+            method: "PUT",
+            bucket: bucket,
+            key: key,
+            queryItems: [
+                URLQueryItem(name: "partNumber", value: String(partNumber)),
+                URLQueryItem(name: "uploadId", value: uploadId)
+            ],
+            headers: ["Content-Length": String(data.count)],
+            body: data
+        )
+
+        let (_, response) = try await executeRequest(request, body: data)
+        let etag = response.value(forHTTPHeaderField: "ETag") ?? ""
+
+        return CompletedPart(partNumber: partNumber, etag: etag)
+    }
 }
