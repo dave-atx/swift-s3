@@ -304,4 +304,18 @@ public final class S3Client: Sendable {
 
         _ = try await executeRequest(request, body: nil)
     }
+
+    public func headObject(bucket: String, key: String) async throws -> ObjectMetadata {
+        let request = requestBuilder.buildRequest(
+            method: "HEAD",
+            bucket: bucket,
+            key: key,
+            queryItems: nil,
+            headers: nil,
+            body: nil
+        )
+
+        let (_, response) = try await executeRequest(request, body: nil)
+        return parseObjectMetadata(from: response)
+    }
 }
