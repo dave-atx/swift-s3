@@ -426,4 +426,21 @@ public final class S3Client: Sendable {
         let (_, response) = try await executeRequest(request, body: body)
         return response.value(forHTTPHeaderField: "ETag") ?? ""
     }
+
+    public func abortMultipartUpload(
+        bucket: String,
+        key: String,
+        uploadId: String
+    ) async throws {
+        let request = requestBuilder.buildRequest(
+            method: "DELETE",
+            bucket: bucket,
+            key: key,
+            queryItems: [URLQueryItem(name: "uploadId", value: uploadId)],
+            headers: nil,
+            body: nil
+        )
+
+        _ = try await executeRequest(request, body: nil)
+    }
 }
