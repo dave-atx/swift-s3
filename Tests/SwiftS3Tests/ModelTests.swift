@@ -19,3 +19,18 @@ import Foundation
     #expect(bucket.creationDate == date)
     #expect(bucket.region == "us-east-1")
 }
+
+@Test func s3ObjectProperties() async throws {
+    let obj = S3Object(
+        key: "folder/file.txt",
+        lastModified: nil,
+        etag: "\"abc123\"",
+        size: 1024,
+        storageClass: "STANDARD",
+        owner: nil
+    )
+
+    #expect(obj.key == "folder/file.txt")
+    #expect(obj.size == 1024)
+    #expect(obj.storageClass == "STANDARD")
+}
