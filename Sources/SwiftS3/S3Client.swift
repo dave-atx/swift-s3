@@ -109,4 +109,42 @@ public final class S3Client: Sendable {
 
         _ = try await executeRequest(request, body: nil)
     }
+
+    // MARK: - Object Operations
+
+    public func listObjects(
+        bucket: String,
+        prefix: String? = nil,
+        delimiter: String? = nil,
+        maxKeys: Int? = nil,
+        continuationToken: String? = nil
+    ) async throws -> ListObjectsResult {
+        var queryItems: [URLQueryItem] = [
+            URLQueryItem(name: "list-type", value: "2")
+        ]
+        if let prefix = prefix {
+            queryItems.append(URLQueryItem(name: "prefix", value: prefix))
+        }
+        if let delimiter = delimiter {
+            queryItems.append(URLQueryItem(name: "delimiter", value: delimiter))
+        }
+        if let maxKeys = maxKeys {
+            queryItems.append(URLQueryItem(name: "max-keys", value: String(maxKeys)))
+        }
+        if let continuationToken = continuationToken {
+            queryItems.append(URLQueryItem(name: "continuation-token", value: continuationToken))
+        }
+
+        let request = requestBuilder.buildRequest(
+            method: "GET",
+            bucket: bucket,
+            key: nil,
+            queryItems: queryItems,
+            headers: nil,
+            body: nil
+        )
+
+        let (data, _) = try await executeRequest(request, body: nil)
+        return try xmlParser.parseListObjects(from: data)
+    }
 }
