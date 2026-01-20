@@ -95,4 +95,39 @@ struct SigV4Signer: Sendable {
         let kSigning = "aws4_request".data(using: .utf8)!.hmacSHA256(key: kService)
         return kSigning
     }
+
+    func sign(request: inout URLRequest, date: Date, payloadHash: String) {
+        let amzDateValue = amzDate(for: date)
+        let dateStampValue = dateStamp(for: date)
+
+        // Set required headers before signing
+        request.setValue(amzDateValue, forHTTPHeaderField: "x-amz-date")
+        request.setValue(payloadHash, forHTTPHeaderField: "x-amz-content-sha256")
+
+        // Build canonical request
+        let canonical = canonicalRequest(request, payloadHash: payloadHash)
+        let canonicalHash = canonical.data(using: .utf8)!.sha256().hexString
+
+        // Build string to sign
+        let stringToSignValue = stringToSign(canonicalRequestHash: canonicalHash, date: date)
+
+        // Calculate signature
+        let signingKeyValue = signingKey(for: date)
+        let signature = stringToSignValue.data(using: .utf8)!.hmacSHA256(key: signingKeyValue).hexString
+
+        // Get signed headers list
+        var headers: [String] = []
+        if let allHeaders = request.allHTTPHeaderFields {
+            headers = allHeaders.keys.map { $0.lowercased() }.sorted()
+        }
+        let signedHeaders = headers.joined(separator: ";")
+
+        // Build credential scope
+        let scope = "\(dateStampValue)/\(region)/\(service)/aws4_request"
+
+        // Build Authorization header
+        let authorization = "AWS4-HMAC-SHA256 Credential=\(accessKeyId)/\(scope), SignedHeaders=\(signedHeaders), Signature=\(signature)"
+
+        request.setValue(authorization, forHTTPHeaderField: "Authorization")
+    }
 }
