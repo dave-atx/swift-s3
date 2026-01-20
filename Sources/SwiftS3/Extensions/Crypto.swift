@@ -1,5 +1,7 @@
 import Foundation
 
+// TODO: Consider using a cross-platform crypto library (e.g., swift-crypto) for better
+// performance and security auditing. See: https://github.com/dave-atx/swift-s3/issues/2
 extension Data {
     func sha256() -> Data {
         SHA256.hash(data: self)
@@ -10,7 +12,8 @@ extension Data {
     }
 }
 
-// Pure Swift SHA256 implementation for cross-platform compatibility
+// Pure Swift SHA256 implementation for cross-platform compatibility (macOS + Linux).
+// TODO: Consider replacing with swift-crypto for production use. See issue #2.
 enum SHA256 {
     private static let k: [UInt32] = [
         0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
@@ -115,7 +118,8 @@ enum SHA256 {
     }
 }
 
-// HMAC-SHA256 implementation
+// HMAC-SHA256 implementation for cross-platform compatibility.
+// TODO: Consider replacing with swift-crypto for production use. See issue #2.
 enum HMAC {
     static func authenticationCode(for message: Data, using key: Data) -> Data {
         let blockSize = 64
