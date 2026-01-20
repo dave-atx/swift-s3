@@ -339,4 +339,37 @@ public final class S3Client: Sendable {
         let (_, response) = try await executeRequest(request, body: nil)
         return response.value(forHTTPHeaderField: "ETag") ?? ""
     }
+
+    // MARK: - Multipart Upload Operations
+
+    public func createMultipartUpload(
+        bucket: String,
+        key: String,
+        contentType: String? = nil,
+        metadata: [String: String]? = nil
+    ) async throws -> MultipartUpload {
+        var headers: [String: String] = [:]
+
+        if let contentType = contentType {
+            headers["Content-Type"] = contentType
+        }
+
+        if let metadata = metadata {
+            for (key, value) in metadata {
+                headers["x-amz-meta-\(key)"] = value
+            }
+        }
+
+        let request = requestBuilder.buildRequest(
+            method: "POST",
+            bucket: bucket,
+            key: key,
+            queryItems: [URLQueryItem(name: "uploads", value: nil)],
+            headers: headers.isEmpty ? nil : headers,
+            body: nil
+        )
+
+        let (data, _) = try await executeRequest(request, body: nil)
+        return try xmlParser.parseInitiateMultipartUpload(from: data)
+    }
 }
