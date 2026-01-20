@@ -91,3 +91,20 @@ import Foundation
     #expect(result.prefix == "photos/")
     #expect(result.isTruncated == false)
 }
+
+@Test func parseInitiateMultipartUploadResponse() async throws {
+    let xml = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <InitiateMultipartUploadResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+            <Bucket>my-bucket</Bucket>
+            <Key>large-file.bin</Key>
+            <UploadId>VXBsb2FkIElEIGZvciA2aWWpbmcncyBteS1tb3ZpZS5tMnRzIHVwbG9hZA</UploadId>
+        </InitiateMultipartUploadResult>
+        """
+
+    let parser = XMLResponseParser()
+    let result = try parser.parseInitiateMultipartUpload(from: xml.data(using: .utf8)!)
+
+    #expect(result.uploadId == "VXBsb2FkIElEIGZvciA2aWWpbmcncyBteS1tb3ZpZS5tMnRzIHVwbG9hZA")
+    #expect(result.key == "large-file.bin")
+}

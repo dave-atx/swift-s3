@@ -88,6 +88,58 @@ final class XMLResponseParser: NSObject, XMLParserDelegate, @unchecked Sendable 
             continuationToken: delegate.continuationToken
         )
     }
+
+    func parseInitiateMultipartUpload(from data: Data) throws -> MultipartUpload {
+        result = [:]
+        elementStack = []
+
+        let parser = XMLParser(data: data)
+        parser.delegate = self
+
+        guard parser.parse() else {
+            throw S3ParsingError(message: "Failed to parse InitiateMultipartUpload XML", responseBody: String(data: data, encoding: .utf8))
+        }
+
+        guard let uploadId = result["UploadId"],
+              let key = result["Key"] else {
+            throw S3ParsingError(message: "Missing required fields", responseBody: String(data: data, encoding: .utf8))
+        }
+
+        return MultipartUpload(uploadId: uploadId, key: key, initiated: nil)
+    }
+
+    func parseListMultipartUploads(from data: Data) throws -> ListMultipartUploadsResult {
+        let delegate = ListMultipartUploadsParserDelegate()
+        let parser = XMLParser(data: data)
+        parser.delegate = delegate
+
+        guard parser.parse() else {
+            throw S3ParsingError(message: "Failed to parse ListMultipartUploads XML", responseBody: String(data: data, encoding: .utf8))
+        }
+
+        return ListMultipartUploadsResult(
+            uploads: delegate.uploads,
+            isTruncated: delegate.isTruncated,
+            nextKeyMarker: delegate.nextKeyMarker,
+            nextUploadIdMarker: delegate.nextUploadIdMarker
+        )
+    }
+
+    func parseListParts(from data: Data) throws -> ListPartsResult {
+        let delegate = ListPartsParserDelegate()
+        let parser = XMLParser(data: data)
+        parser.delegate = delegate
+
+        guard parser.parse() else {
+            throw S3ParsingError(message: "Failed to parse ListParts XML", responseBody: String(data: data, encoding: .utf8))
+        }
+
+        return ListPartsResult(
+            parts: delegate.parts,
+            isTruncated: delegate.isTruncated,
+            nextPartNumberMarker: delegate.nextPartNumberMarker
+        )
+    }
 }
 
 private final class ListBucketsParserDelegate: NSObject, XMLParserDelegate {
@@ -255,6 +307,151 @@ private final class ListObjectsParserDelegate: NSObject, XMLParserDelegate {
             }
         case "Prefix" where parent == "CommonPrefixes":
             commonPrefixes.append(trimmed)
+        default:
+            break
+        }
+
+        elementStack.removeLast()
+        currentText = ""
+    }
+}
+
+private final class ListMultipartUploadsParserDelegate: NSObject, XMLParserDelegate {
+    var uploads: [MultipartUpload] = []
+    var isTruncated = false
+    var nextKeyMarker: String?
+    var nextUploadIdMarker: String?
+
+    private var currentElement = ""
+    private var currentText = ""
+    private var elementStack: [String] = []
+
+    private var currentKey: String?
+    private var currentUploadId: String?
+    private var currentInitiated: Date?
+
+    nonisolated(unsafe) private static let dateFormatter: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter
+    }()
+
+    nonisolated(unsafe) private static let dateFormatterNoFraction: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime]
+        return formatter
+    }()
+
+    func parser(_ parser: XMLParser, didStartElement elementName: String, namespaceURI: String?, qualifiedName qName: String?, attributes attributeDict: [String: String] = [:]) {
+        currentElement = elementName
+        currentText = ""
+        elementStack.append(elementName)
+
+        if elementName == "Upload" {
+            currentKey = nil
+            currentUploadId = nil
+            currentInitiated = nil
+        }
+    }
+
+    func parser(_ parser: XMLParser, foundCharacters string: String) {
+        currentText += string
+    }
+
+    func parser(_ parser: XMLParser, didEndElement elementName: String, namespaceURI: String?, qualifiedName qName: String?) {
+        let trimmed = currentText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let parent = elementStack.count >= 2 ? elementStack[elementStack.count - 2] : ""
+
+        switch elementName {
+        case "Key" where parent == "Upload":
+            currentKey = trimmed
+        case "UploadId" where parent == "Upload":
+            currentUploadId = trimmed
+        case "Initiated" where parent == "Upload":
+            currentInitiated = Self.dateFormatter.date(from: trimmed) ?? Self.dateFormatterNoFraction.date(from: trimmed)
+        case "Upload":
+            if let key = currentKey, let uploadId = currentUploadId {
+                uploads.append(MultipartUpload(uploadId: uploadId, key: key, initiated: currentInitiated))
+            }
+        case "IsTruncated":
+            isTruncated = trimmed.lowercased() == "true"
+        case "NextKeyMarker":
+            nextKeyMarker = trimmed.isEmpty ? nil : trimmed
+        case "NextUploadIdMarker":
+            nextUploadIdMarker = trimmed.isEmpty ? nil : trimmed
+        default:
+            break
+        }
+
+        elementStack.removeLast()
+        currentText = ""
+    }
+}
+
+private final class ListPartsParserDelegate: NSObject, XMLParserDelegate {
+    var parts: [Part] = []
+    var isTruncated = false
+    var nextPartNumberMarker: Int?
+
+    private var currentElement = ""
+    private var currentText = ""
+    private var elementStack: [String] = []
+
+    private var currentPartNumber: Int?
+    private var currentEtag: String?
+    private var currentSize: Int64?
+    private var currentLastModified: Date?
+
+    nonisolated(unsafe) private static let dateFormatter: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter
+    }()
+
+    nonisolated(unsafe) private static let dateFormatterNoFraction: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime]
+        return formatter
+    }()
+
+    func parser(_ parser: XMLParser, didStartElement elementName: String, namespaceURI: String?, qualifiedName qName: String?, attributes attributeDict: [String: String] = [:]) {
+        currentElement = elementName
+        currentText = ""
+        elementStack.append(elementName)
+
+        if elementName == "Part" {
+            currentPartNumber = nil
+            currentEtag = nil
+            currentSize = nil
+            currentLastModified = nil
+        }
+    }
+
+    func parser(_ parser: XMLParser, foundCharacters string: String) {
+        currentText += string
+    }
+
+    func parser(_ parser: XMLParser, didEndElement elementName: String, namespaceURI: String?, qualifiedName qName: String?) {
+        let trimmed = currentText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let parent = elementStack.count >= 2 ? elementStack[elementStack.count - 2] : ""
+
+        switch elementName {
+        case "PartNumber" where parent == "Part":
+            currentPartNumber = Int(trimmed)
+        case "ETag" where parent == "Part":
+            currentEtag = trimmed
+        case "Size" where parent == "Part":
+            currentSize = Int64(trimmed)
+        case "LastModified" where parent == "Part":
+            currentLastModified = Self.dateFormatter.date(from: trimmed) ?? Self.dateFormatterNoFraction.date(from: trimmed)
+        case "Part":
+            if let partNumber = currentPartNumber, let etag = currentEtag {
+                parts.append(Part(partNumber: partNumber, etag: etag, size: currentSize, lastModified: currentLastModified))
+            }
+        case "IsTruncated":
+            isTruncated = trimmed.lowercased() == "true"
+        case "NextPartNumberMarker":
+            nextPartNumberMarker = Int(trimmed)
         default:
             break
         }
