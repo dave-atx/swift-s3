@@ -291,4 +291,17 @@ public final class S3Client: Sendable {
         let (_, response) = try await executeRequest(request, body: data)
         return response.value(forHTTPHeaderField: "ETag") ?? ""
     }
+
+    public func deleteObject(bucket: String, key: String) async throws {
+        let request = requestBuilder.buildRequest(
+            method: "DELETE",
+            bucket: bucket,
+            key: key,
+            queryItems: nil,
+            headers: nil,
+            body: nil
+        )
+
+        _ = try await executeRequest(request, body: nil)
+    }
 }
