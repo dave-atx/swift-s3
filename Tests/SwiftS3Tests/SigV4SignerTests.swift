@@ -48,3 +48,25 @@ import FoundationNetworking
 
     #expect(canonical == expected)
 }
+
+@Test func stringToSign() async throws {
+    let signer = SigV4Signer(
+        accessKeyId: "AKID",
+        secretAccessKey: "SECRET",
+        region: "us-east-1"
+    )
+
+    let date = Date(timeIntervalSince1970: 1440938160) // 20150830T123600Z
+    let canonicalRequestHash = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+
+    let stringToSign = signer.stringToSign(canonicalRequestHash: canonicalRequestHash, date: date)
+
+    let expected = """
+        AWS4-HMAC-SHA256
+        20150830T123600Z
+        20150830/us-east-1/s3/aws4_request
+        e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+        """
+
+    #expect(stringToSign == expected)
+}

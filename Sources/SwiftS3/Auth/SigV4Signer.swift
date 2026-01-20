@@ -72,4 +72,17 @@ struct SigV4Signer: Sendable {
             \(payloadHash)
             """
     }
+
+    func stringToSign(canonicalRequestHash: String, date: Date) -> String {
+        let dateStamp = dateStamp(for: date)
+        let amzDate = amzDate(for: date)
+        let scope = "\(dateStamp)/\(region)/\(service)/aws4_request"
+
+        return """
+            AWS4-HMAC-SHA256
+            \(amzDate)
+            \(scope)
+            \(canonicalRequestHash)
+            """
+    }
 }
