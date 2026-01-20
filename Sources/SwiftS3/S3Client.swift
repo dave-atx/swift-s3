@@ -70,4 +70,30 @@ public final class S3Client: Sendable {
         let (data, _) = try await executeRequest(request, body: nil)
         return try xmlParser.parseListBuckets(from: data)
     }
+
+    public func createBucket(_ name: String, region: String? = nil) async throws {
+        var body: Data? = nil
+
+        // If region differs from configuration region, include LocationConstraint
+        if let region = region, region != configuration.region {
+            let xml = """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <CreateBucketConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+                    <LocationConstraint>\(region)</LocationConstraint>
+                </CreateBucketConfiguration>
+                """
+            body = xml.data(using: .utf8)
+        }
+
+        let request = requestBuilder.buildRequest(
+            method: "PUT",
+            bucket: name,
+            key: nil,
+            queryItems: nil,
+            headers: body != nil ? ["Content-Type": "application/xml"] : nil,
+            body: body
+        )
+
+        _ = try await executeRequest(request, body: body)
+    }
 }
