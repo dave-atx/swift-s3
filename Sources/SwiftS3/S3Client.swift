@@ -202,4 +202,60 @@ public final class S3Client: Sendable {
         formatter.dateFormat = "EEE, dd MMM yyyy HH:mm:ss zzz"
         return formatter.date(from: string)
     }
+
+    // TODO: Find cross-platform solution for streaming downloads on Linux.
+    // See: https://github.com/dave-atx/swift-s3/issues/3
+    #if !canImport(FoundationNetworking)
+    public func getObjectStream(
+        bucket: String,
+        key: String,
+        range: Range<Int64>? = nil
+    ) async throws -> (stream: AsyncThrowingStream<UInt8, Error>, metadata: ObjectMetadata) {
+        var headers: [String: String] = [:]
+        if let range = range {
+            headers["Range"] = "bytes=\(range.lowerBound)-\(range.upperBound - 1)"
+        }
+
+        var request = requestBuilder.buildRequest(
+            method: "GET",
+            bucket: bucket,
+            key: key,
+            queryItems: nil,
+            headers: headers.isEmpty ? nil : headers,
+            body: nil
+        )
+
+        let payloadHash = Data().sha256().hexString
+        signer.sign(request: &request, date: Date(), payloadHash: payloadHash)
+
+        let (bytes, response) = try await httpClient.executeStream(request)
+
+        if response.statusCode >= 400 {
+            // For error responses, we need to read the body
+            var errorData = Data()
+            for try await byte in bytes {
+                errorData.append(byte)
+            }
+            let error = try xmlParser.parseError(from: errorData)
+            throw error
+        }
+
+        let metadata = parseObjectMetadata(from: response)
+
+        let stream = AsyncThrowingStream<UInt8, Error> { continuation in
+            Task {
+                do {
+                    for try await byte in bytes {
+                        continuation.yield(byte)
+                    }
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+        }
+
+        return (stream, metadata)
+    }
+    #endif
 }
