@@ -39,4 +39,35 @@ public final class S3Client: Sendable {
 
         return (data, response)
     }
+
+    // MARK: - Bucket Operations
+
+    public func listBuckets(
+        prefix: String? = nil,
+        maxBuckets: Int? = nil,
+        continuationToken: String? = nil
+    ) async throws -> ListBucketsResult {
+        var queryItems: [URLQueryItem] = []
+        if let prefix = prefix {
+            queryItems.append(URLQueryItem(name: "prefix", value: prefix))
+        }
+        if let maxBuckets = maxBuckets {
+            queryItems.append(URLQueryItem(name: "max-buckets", value: String(maxBuckets)))
+        }
+        if let continuationToken = continuationToken {
+            queryItems.append(URLQueryItem(name: "continuation-token", value: continuationToken))
+        }
+
+        let request = requestBuilder.buildRequest(
+            method: "GET",
+            bucket: nil,
+            key: nil,
+            queryItems: queryItems.isEmpty ? nil : queryItems,
+            headers: nil,
+            body: nil
+        )
+
+        let (data, _) = try await executeRequest(request, body: nil)
+        return try xmlParser.parseListBuckets(from: data)
+    }
 }
