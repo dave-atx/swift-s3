@@ -1,0 +1,38 @@
+import Testing
+@testable import SwiftS3
+
+@Test func s3ErrorHasMessage() async throws {
+    let error = S3NetworkError(message: "Connection failed", underlyingError: nil)
+    #expect(error.message == "Connection failed")
+}
+
+@Test func s3ParsingErrorIncludesResponseBody() async throws {
+    let error = S3ParsingError(message: "Invalid XML", responseBody: "<bad>")
+    #expect(error.message == "Invalid XML")
+    #expect(error.responseBody == "<bad>")
+}
+
+@Test func s3APIErrorCodeMapping() async throws {
+    let error = S3APIError(
+        code: .noSuchBucket,
+        message: "Bucket not found",
+        resource: "/my-bucket",
+        requestId: "abc123"
+    )
+    #expect(error.code == .noSuchBucket)
+    #expect(error.code.rawValue == "NoSuchBucket")
+}
+
+@Test func s3APIErrorUnknownCode() async throws {
+    let error = S3APIError(
+        code: .unknown("CustomError"),
+        message: "Something custom",
+        resource: nil,
+        requestId: nil
+    )
+    if case .unknown(let code) = error.code {
+        #expect(code == "CustomError")
+    } else {
+        Issue.record("Expected unknown code")
+    }
+}
