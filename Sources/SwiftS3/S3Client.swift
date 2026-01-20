@@ -96,4 +96,17 @@ public final class S3Client: Sendable {
 
         _ = try await executeRequest(request, body: body)
     }
+
+    public func deleteBucket(_ name: String) async throws {
+        let request = requestBuilder.buildRequest(
+            method: "DELETE",
+            bucket: name,
+            key: nil,
+            queryItems: nil,
+            headers: nil,
+            body: nil
+        )
+
+        _ = try await executeRequest(request, body: nil)
+    }
 }
