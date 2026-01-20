@@ -258,4 +258,37 @@ public final class S3Client: Sendable {
         return (stream, metadata)
     }
     #endif
+
+    public func putObject(
+        bucket: String,
+        key: String,
+        data: Data,
+        contentType: String? = nil,
+        metadata: [String: String]? = nil
+    ) async throws -> String {
+        var headers: [String: String] = [:]
+        headers["Content-Length"] = String(data.count)
+
+        if let contentType = contentType {
+            headers["Content-Type"] = contentType
+        }
+
+        if let metadata = metadata {
+            for (key, value) in metadata {
+                headers["x-amz-meta-\(key)"] = value
+            }
+        }
+
+        let request = requestBuilder.buildRequest(
+            method: "PUT",
+            bucket: bucket,
+            key: key,
+            queryItems: nil,
+            headers: headers,
+            body: data
+        )
+
+        let (_, response) = try await executeRequest(request, body: data)
+        return response.value(forHTTPHeaderField: "ETag") ?? ""
+    }
 }
