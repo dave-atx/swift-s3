@@ -1,4 +1,7 @@
 import Foundation
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
 
 struct SigV4Signer: Sendable {
     let accessKeyId: String
@@ -28,5 +31,45 @@ struct SigV4Signer: Sendable {
 
     func amzDate(for date: Date) -> String {
         Self.amzDateFormatter.string(from: date)
+    }
+
+    func canonicalRequest(_ request: URLRequest, payloadHash: String) -> String {
+        let method = request.httpMethod ?? "GET"
+
+        let url = request.url!
+        let path = url.path.isEmpty ? "/" : url.path
+
+        let query = url.query ?? ""
+        let sortedQuery = query
+            .split(separator: "&")
+            .sorted()
+            .joined(separator: "&")
+
+        // Get sorted headers (lowercase keys)
+        var headers: [(String, String)] = []
+        if let allHeaders = request.allHTTPHeaderFields {
+            for (key, value) in allHeaders {
+                headers.append((key.lowercased(), value))
+            }
+        }
+        headers.sort { $0.0 < $1.0 }
+
+        let canonicalHeaders = headers
+            .map { "\($0.0):\($0.1)" }
+            .joined(separator: "\n")
+
+        let signedHeaders = headers
+            .map { $0.0 }
+            .joined(separator: ";")
+
+        return """
+            \(method)
+            \(path)
+            \(sortedQuery)
+            \(canonicalHeaders)
+
+            \(signedHeaders)
+            \(payloadHash)
+            """
     }
 }
