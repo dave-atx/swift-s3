@@ -20,6 +20,9 @@ struct HTTPClient: Sendable {
         return (data, httpResponse)
     }
 
+    // TODO: Find cross-platform solution for streaming HTTP responses on Linux.
+    // URLSession.AsyncBytes is not available in FoundationNetworking.
+    // See: https://github.com/dave-atx/swift-s3/issues/3
     #if !canImport(FoundationNetworking)
     func executeStream(_ request: URLRequest) async throws -> (URLSession.AsyncBytes, HTTPURLResponse) {
         let (bytes, response) = try await session.bytes(for: request)
