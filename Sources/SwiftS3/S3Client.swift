@@ -8,7 +8,6 @@ public final class S3Client: Sendable {
     private let httpClient: any HTTPClientProtocol
     private let signer: SigV4Signer
     private let requestBuilder: RequestBuilder
-    private let xmlParser: XMLResponseParser
 
     public init(configuration: S3Configuration) {
         self.configuration = configuration
@@ -19,7 +18,6 @@ public final class S3Client: Sendable {
             region: configuration.region
         )
         self.requestBuilder = RequestBuilder(configuration: configuration)
-        self.xmlParser = XMLResponseParser()
     }
 
     // Internal init for testing
@@ -32,7 +30,6 @@ public final class S3Client: Sendable {
             region: configuration.region
         )
         self.requestBuilder = RequestBuilder(configuration: configuration)
-        self.xmlParser = XMLResponseParser()
     }
 
     // MARK: - Private Helpers
@@ -46,7 +43,7 @@ public final class S3Client: Sendable {
 
         // Check for error responses
         if response.statusCode >= 400 {
-            let error = try xmlParser.parseError(from: data)
+            let error = try XMLResponseParser().parseError(from: data)
             throw error
         }
 
@@ -81,7 +78,7 @@ public final class S3Client: Sendable {
         )
 
         let (data, _) = try await executeRequest(request, body: nil)
-        return try xmlParser.parseListBuckets(from: data)
+        return try XMLResponseParser().parseListBuckets(from: data)
     }
 
     public func createBucket(_ name: String, region: String? = nil) async throws {
@@ -158,7 +155,7 @@ public final class S3Client: Sendable {
         )
 
         let (data, _) = try await executeRequest(request, body: nil)
-        return try xmlParser.parseListObjects(from: data)
+        return try XMLResponseParser().parseListObjects(from: data)
     }
 
     public func getObject(
@@ -249,7 +246,7 @@ public final class S3Client: Sendable {
             for try await byte in bytes {
                 errorData.append(byte)
             }
-            let error = try xmlParser.parseError(from: errorData)
+            let error = try XMLResponseParser().parseError(from: errorData)
             throw error
         }
 
@@ -443,7 +440,7 @@ public final class S3Client: Sendable {
         )
 
         let (data, _) = try await executeRequest(request, body: nil)
-        return try xmlParser.parseInitiateMultipartUpload(from: data)
+        return try XMLResponseParser().parseInitiateMultipartUpload(from: data)
     }
 
     public func uploadPart(
@@ -542,7 +539,7 @@ public final class S3Client: Sendable {
         )
 
         let (data, _) = try await executeRequest(request, body: nil)
-        return try xmlParser.parseListMultipartUploads(from: data)
+        return try XMLResponseParser().parseListMultipartUploads(from: data)
     }
 
     public func listParts(
@@ -572,6 +569,6 @@ public final class S3Client: Sendable {
         )
 
         let (data, _) = try await executeRequest(request, body: nil)
-        return try xmlParser.parseListParts(from: data)
+        return try XMLResponseParser().parseListParts(from: data)
     }
 }

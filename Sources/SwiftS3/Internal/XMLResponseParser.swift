@@ -3,7 +3,19 @@ import Foundation
 import FoundationXML
 #endif
 
-final class XMLResponseParser: NSObject, XMLParserDelegate, @unchecked Sendable {
+/// Parses an ISO8601 date string, trying with and without fractional seconds
+private func parseISO8601Date(_ string: String) -> Date? {
+    let formatterWithFraction = ISO8601DateFormatter()
+    formatterWithFraction.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+    if let date = formatterWithFraction.date(from: string) {
+        return date
+    }
+    let formatterNoFraction = ISO8601DateFormatter()
+    formatterNoFraction.formatOptions = [.withInternetDateTime]
+    return formatterNoFraction.date(from: string)
+}
+
+final class XMLResponseParser: NSObject, XMLParserDelegate {
     private var currentElement = ""
     private var currentText = ""
     private var elementStack: [String] = []
@@ -160,18 +172,6 @@ private final class ListBucketsParserDelegate: NSObject, XMLParserDelegate {
     private var ownerId: String?
     private var ownerDisplayName: String?
 
-    nonisolated(unsafe) private static let dateFormatter: ISO8601DateFormatter = {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        return formatter
-    }()
-
-    nonisolated(unsafe) private static let dateFormatterNoFraction: ISO8601DateFormatter = {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime]
-        return formatter
-    }()
-
     func parser(_ parser: XMLParser, didStartElement elementName: String, namespaceURI: String?, qualifiedName qName: String?, attributes attributeDict: [String: String] = [:]) {
         currentElement = elementName
         currentText = ""
@@ -196,7 +196,7 @@ private final class ListBucketsParserDelegate: NSObject, XMLParserDelegate {
         case "Name" where parent == "Bucket":
             currentBucketName = trimmed
         case "CreationDate" where parent == "Bucket":
-            currentBucketCreationDate = Self.dateFormatter.date(from: trimmed) ?? Self.dateFormatterNoFraction.date(from: trimmed)
+            currentBucketCreationDate = parseISO8601Date(trimmed)
         case "BucketRegion" where parent == "Bucket":
             currentBucketRegion = trimmed
         case "Bucket":
@@ -241,18 +241,6 @@ private final class ListObjectsParserDelegate: NSObject, XMLParserDelegate {
     private var currentSize: Int64?
     private var currentStorageClass: String?
 
-    nonisolated(unsafe) private static let dateFormatter: ISO8601DateFormatter = {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        return formatter
-    }()
-
-    nonisolated(unsafe) private static let dateFormatterNoFraction: ISO8601DateFormatter = {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime]
-        return formatter
-    }()
-
     func parser(_ parser: XMLParser, didStartElement elementName: String, namespaceURI: String?, qualifiedName qName: String?, attributes attributeDict: [String: String] = [:]) {
         currentElement = elementName
         currentText = ""
@@ -287,7 +275,7 @@ private final class ListObjectsParserDelegate: NSObject, XMLParserDelegate {
         case "Key" where parent == "Contents":
             currentKey = trimmed
         case "LastModified" where parent == "Contents":
-            currentLastModified = Self.dateFormatter.date(from: trimmed) ?? Self.dateFormatterNoFraction.date(from: trimmed)
+            currentLastModified = parseISO8601Date(trimmed)
         case "ETag" where parent == "Contents":
             currentEtag = trimmed
         case "Size" where parent == "Contents":
@@ -330,18 +318,6 @@ private final class ListMultipartUploadsParserDelegate: NSObject, XMLParserDeleg
     private var currentUploadId: String?
     private var currentInitiated: Date?
 
-    nonisolated(unsafe) private static let dateFormatter: ISO8601DateFormatter = {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        return formatter
-    }()
-
-    nonisolated(unsafe) private static let dateFormatterNoFraction: ISO8601DateFormatter = {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime]
-        return formatter
-    }()
-
     func parser(_ parser: XMLParser, didStartElement elementName: String, namespaceURI: String?, qualifiedName qName: String?, attributes attributeDict: [String: String] = [:]) {
         currentElement = elementName
         currentText = ""
@@ -368,7 +344,7 @@ private final class ListMultipartUploadsParserDelegate: NSObject, XMLParserDeleg
         case "UploadId" where parent == "Upload":
             currentUploadId = trimmed
         case "Initiated" where parent == "Upload":
-            currentInitiated = Self.dateFormatter.date(from: trimmed) ?? Self.dateFormatterNoFraction.date(from: trimmed)
+            currentInitiated = parseISO8601Date(trimmed)
         case "Upload":
             if let key = currentKey, let uploadId = currentUploadId {
                 uploads.append(MultipartUpload(uploadId: uploadId, key: key, initiated: currentInitiated))
@@ -402,18 +378,6 @@ private final class ListPartsParserDelegate: NSObject, XMLParserDelegate {
     private var currentSize: Int64?
     private var currentLastModified: Date?
 
-    nonisolated(unsafe) private static let dateFormatter: ISO8601DateFormatter = {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        return formatter
-    }()
-
-    nonisolated(unsafe) private static let dateFormatterNoFraction: ISO8601DateFormatter = {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime]
-        return formatter
-    }()
-
     func parser(_ parser: XMLParser, didStartElement elementName: String, namespaceURI: String?, qualifiedName qName: String?, attributes attributeDict: [String: String] = [:]) {
         currentElement = elementName
         currentText = ""
@@ -443,7 +407,7 @@ private final class ListPartsParserDelegate: NSObject, XMLParserDelegate {
         case "Size" where parent == "Part":
             currentSize = Int64(trimmed)
         case "LastModified" where parent == "Part":
-            currentLastModified = Self.dateFormatter.date(from: trimmed) ?? Self.dateFormatterNoFraction.date(from: trimmed)
+            currentLastModified = parseISO8601Date(trimmed)
         case "Part":
             if let partNumber = currentPartNumber, let etag = currentEtag {
                 parts.append(Part(partNumber: partNumber, etag: etag, size: currentSize, lastModified: currentLastModified))

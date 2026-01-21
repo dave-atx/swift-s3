@@ -27,6 +27,7 @@ swift build --swift-sdk x86_64-swift-linux-musl
 - Cross-platform: macOS 26+ and Linux (Swift Static Linux SDK)
 - No external dependencies - pure Swift implementation
 - All public types must be `Sendable`
+- Do not use `unsafe`, `@unchecked`, or `nonisolated(unsafe)` - prefer safe alternatives
 
 ## Architecture
 
