@@ -42,6 +42,12 @@ struct MockHTTPClient: HTTPClientProtocol {
         }
         return try await handler(request, destination, resumeData, progress)
     }
+
+    #if !canImport(FoundationNetworking)
+    func executeStream(_ request: URLRequest) async throws -> (URLSession.AsyncBytes, HTTPURLResponse) {
+        fatalError("executeStream not implemented in mock")
+    }
+    #endif
 }
 
 @Test func listBucketsBuildsCorrectRequest() async throws {
