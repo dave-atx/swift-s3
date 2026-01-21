@@ -3,11 +3,12 @@ import Foundation
 @testable import SwiftS3
 
 @Test func configurationStoresProperties() async throws {
+    let endpoint = try #require(URL(string: "https://s3.us-east-1.amazonaws.com"))
     let config = S3Configuration(
         accessKeyId: "AKIAIOSFODNN7EXAMPLE",
         secretAccessKey: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
         region: "us-east-1",
-        endpoint: URL(string: "https://s3.us-east-1.amazonaws.com")!,
+        endpoint: endpoint,
         usePathStyleAddressing: false
     )
 

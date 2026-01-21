@@ -14,7 +14,7 @@ import Foundation
         """
 
     let parser = XMLResponseParser()
-    let error: S3APIError = try parser.parseError(from: xml.data(using: .utf8)!)
+    let error: S3APIError = try parser.parseError(from: Data(xml.utf8))
 
     #expect(error.code == .noSuchBucket)
     #expect(error.message == "The specified bucket does not exist")
@@ -44,7 +44,7 @@ import Foundation
         """
 
     let parser = XMLResponseParser()
-    let result: ListBucketsResult = try parser.parseListBuckets(from: xml.data(using: .utf8)!)
+    let result: ListBucketsResult = try parser.parseListBuckets(from: Data(xml.utf8))
 
     #expect(result.buckets.count == 2)
     #expect(result.buckets[0].name == "my-bucket")
@@ -80,7 +80,7 @@ import Foundation
         """
 
     let parser = XMLResponseParser()
-    let result: ListObjectsResult = try parser.parseListObjects(from: xml.data(using: .utf8)!)
+    let result: ListObjectsResult = try parser.parseListObjects(from: Data(xml.utf8))
 
     #expect(result.objects.count == 2)
     #expect(result.objects[0].key == "photos/image1.jpg")
@@ -103,7 +103,7 @@ import Foundation
         """
 
     let parser = XMLResponseParser()
-    let result = try parser.parseInitiateMultipartUpload(from: xml.data(using: .utf8)!)
+    let result = try parser.parseInitiateMultipartUpload(from: Data(xml.utf8))
 
     #expect(result.uploadId == "VXBsb2FkIElEIGZvciA2aWWpbmcncyBteS1tb3ZpZS5tMnRzIHVwbG9hZA")
     #expect(result.key == "large-file.bin")

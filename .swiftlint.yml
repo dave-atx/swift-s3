@@ -1,0 +1,38 @@
+# .swiftlint.yml
+
+excluded:
+  - .build
+  - .worktrees
+  - Package.swift
+
+# Treat all violations as errors
+strict: true
+
+# Disable structural rules that require significant refactoring
+disabled_rules:
+  - file_length
+  - type_body_length
+  - cyclomatic_complexity
+  - function_parameter_count
+  - todo
+
+# Enable stricter opt-in rules
+opt_in_rules:
+  - force_unwrapping
+  - force_cast
+  - implicitly_unwrapped_optional
+  - vertical_whitespace_closing_braces
+  - vertical_whitespace_opening_braces
+  - closure_spacing
+  - empty_count
+  - first_where
+  - last_where
+  - contains_over_first_not_nil
+  - fatal_error_message
+  - redundant_type_annotation
+  - yoda_condition
+
+# Line length: 120 characters (reasonable for modern displays)
+line_length:
+  warning: 120
+  error: 150

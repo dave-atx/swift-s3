@@ -9,14 +9,19 @@ import FoundationNetworking
 // Live integration tests would require actual credentials
 
 struct MockHTTPClient: HTTPClientProtocol {
-    let executeHandler: @Sendable (URLRequest) async throws -> (Data, HTTPURLResponse)
-    let downloadHandler: (@Sendable (URLRequest, URL, Data?, (@Sendable (Int64, Int64?) -> Void)?) async throws -> (URL, HTTPURLResponse))?
+    typealias ExecuteHandler = @Sendable (URLRequest) async throws -> (Data, HTTPURLResponse)
+    typealias DownloadHandler = @Sendable (
+        URLRequest, URL, Data?, (@Sendable (Int64, Int64?) -> Void)?
+    ) async throws -> (URL, HTTPURLResponse)
+
+    let executeHandler: ExecuteHandler
+    let downloadHandler: DownloadHandler?
 
     init(
-        executeHandler: @escaping @Sendable (URLRequest) async throws -> (Data, HTTPURLResponse) = { _ in
+        executeHandler: @escaping ExecuteHandler = { _ in
             fatalError("executeHandler not set")
         },
-        downloadHandler: (@Sendable (URLRequest, URL, Data?, (@Sendable (Int64, Int64?) -> Void)?) async throws -> (URL, HTTPURLResponse))? = nil
+        downloadHandler: DownloadHandler? = nil
     ) {
         self.executeHandler = executeHandler
         self.downloadHandler = downloadHandler
@@ -93,29 +98,37 @@ private final class ProgressCollector: @unchecked Sendable {
     let capture = RequestCapture()
 
     let mockHTTPClient = MockHTTPClient(
-        downloadHandler: { request, destination, resumeData, progress in
+        downloadHandler: { request, destination, _, _ in
             capture.request = request
-            _ = FileManager.default.createFile(atPath: destination.path, contents: Data(), attributes: nil)
+            _ = FileManager.default.createFile(
+                atPath: destination.path,
+                contents: Data(),
+                attributes: nil
+            )
 
-            let response = HTTPURLResponse(
-                url: request.url!,
-                statusCode: 200,
-                httpVersion: nil,
-                headerFields: [
-                    "Content-Length": "1024",
-                    "Content-Type": "application/octet-stream",
-                    "ETag": "\"abc123\""
-                ]
-            )!
+            guard let url = request.url,
+                  let response = HTTPURLResponse(
+                      url: url,
+                      statusCode: 200,
+                      httpVersion: nil,
+                      headerFields: [
+                          "Content-Length": "1024",
+                          "Content-Type": "application/octet-stream",
+                          "ETag": "\"abc123\""
+                      ]
+                  ) else {
+                fatalError("Failed to create mock response")
+            }
             return (destination, response)
         }
     )
 
+    let endpoint = try #require(URL(string: "https://s3.us-east-1.amazonaws.com"))
     let config = S3Configuration(
         accessKeyId: "AKIAIOSFODNN7EXAMPLE",
         secretAccessKey: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
         region: "us-east-1",
-        endpoint: URL(string: "https://s3.us-east-1.amazonaws.com")!
+        endpoint: endpoint
     )
 
     let client = S3Client(configuration: config, httpClient: mockHTTPClient)
@@ -131,8 +144,10 @@ private final class ProgressCollector: @unchecked Sendable {
 
     #expect(capture.request != nil)
     #expect(capture.request?.httpMethod == "GET")
-    #expect(capture.request?.url?.host?.contains("my-bucket") == true || capture.request?.url?.path.contains("my-bucket") == true)
-    #expect(capture.request?.url?.path.contains("my-key.txt") == true)
+    let urlHost = capture.request?.url?.host ?? ""
+    let urlPath = capture.request?.url?.path ?? ""
+    #expect(urlHost.contains("my-bucket") || urlPath.contains("my-bucket"))
+    #expect(urlPath.contains("my-key.txt"))
     #expect(metadata.contentLength == 1024)
     #expect(metadata.contentType == "application/octet-stream")
     #expect(metadata.etag == "\"abc123\"")
@@ -142,29 +157,37 @@ private final class ProgressCollector: @unchecked Sendable {
     let progressUpdates = ProgressCollector()
 
     let mockHTTPClient = MockHTTPClient(
-        downloadHandler: { request, destination, resumeData, progress in
+        downloadHandler: { request, destination, _, progress in
             // Simulate progress updates
             progress?(1024, 4096)
             progress?(2048, 4096)
             progress?(4096, 4096)
 
-            _ = FileManager.default.createFile(atPath: destination.path, contents: Data(repeating: 0, count: 4096), attributes: nil)
+            _ = FileManager.default.createFile(
+                atPath: destination.path,
+                contents: Data(repeating: 0, count: 4096),
+                attributes: nil
+            )
 
-            let response = HTTPURLResponse(
-                url: request.url!,
-                statusCode: 200,
-                httpVersion: nil,
-                headerFields: ["Content-Length": "4096"]
-            )!
+            guard let url = request.url,
+                  let response = HTTPURLResponse(
+                      url: url,
+                      statusCode: 200,
+                      httpVersion: nil,
+                      headerFields: ["Content-Length": "4096"]
+                  ) else {
+                fatalError("Failed to create mock response")
+            }
             return (destination, response)
         }
     )
 
+    let endpoint = try #require(URL(string: "https://s3.us-east-1.amazonaws.com"))
     let config = S3Configuration(
         accessKeyId: "AKIAIOSFODNN7EXAMPLE",
         secretAccessKey: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
         region: "us-east-1",
-        endpoint: URL(string: "https://s3.us-east-1.amazonaws.com")!
+        endpoint: endpoint
     )
 
     let client = S3Client(configuration: config, httpClient: mockHTTPClient)

@@ -8,7 +8,14 @@ public struct ListObjectsResult: Sendable {
     public let isTruncated: Bool
     public let continuationToken: String?
 
-    public init(name: String, prefix: String?, objects: [S3Object], commonPrefixes: [String], isTruncated: Bool, continuationToken: String?) {
+    public init(
+        name: String,
+        prefix: String?,
+        objects: [S3Object],
+        commonPrefixes: [String],
+        isTruncated: Bool,
+        continuationToken: String?
+    ) {
         self.name = name
         self.prefix = prefix
         self.objects = objects
