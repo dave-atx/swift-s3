@@ -11,6 +11,9 @@ protocol HTTPClientProtocol: Sendable {
         resumeData: Data?,
         progress: (@Sendable (Int64, Int64?) -> Void)?
     ) async throws -> (URL, HTTPURLResponse)
+    #if !canImport(FoundationNetworking)
+    func executeStream(_ request: URLRequest) async throws -> (URLSession.AsyncBytes, HTTPURLResponse)
+    #endif
 }
 
 struct HTTPClient: HTTPClientProtocol, Sendable {
