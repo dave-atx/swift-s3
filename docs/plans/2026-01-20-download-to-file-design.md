@@ -2,7 +2,7 @@
 
 **Issue:** https://github.com/dave-atx/swift-s3/issues/3
 **Date:** 2026-01-20
-**Status:** Proposed
+**Status:** Implemented
 
 ## Problem
 

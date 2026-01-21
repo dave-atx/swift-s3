@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 @testable import SwiftS3
 
@@ -35,4 +36,30 @@ import Testing
     } else {
         Issue.record("Expected unknown code")
     }
+}
+
+@Test func s3DownloadErrorIncludesResumeData() {
+    let resumeData = Data([0x01, 0x02, 0x03])
+    let error = S3DownloadError(
+        message: "Download interrupted",
+        resumeData: resumeData,
+        underlyingError: nil
+    )
+
+    #expect(error.message == "Download interrupted")
+    #expect(error.resumeData == resumeData)
+    #expect(error.underlyingError == nil)
+}
+
+@Test func s3DownloadErrorWithoutResumeData() {
+    let underlying = NSError(domain: "test", code: 1)
+    let error = S3DownloadError(
+        message: "Network failed",
+        resumeData: nil,
+        underlyingError: underlying
+    )
+
+    #expect(error.message == "Network failed")
+    #expect(error.resumeData == nil)
+    #expect(error.underlyingError as? NSError === underlying)
 }
