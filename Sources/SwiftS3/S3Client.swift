@@ -82,7 +82,7 @@ public final class S3Client: Sendable {
     }
 
     public func createBucket(_ name: String, region: String? = nil) async throws {
-        var body: Data? = nil
+        var body: Data?
 
         // If region differs from configuration region, include LocationConstraint
         if let region = region, region != configuration.region {
@@ -338,8 +338,12 @@ public final class S3Client: Sendable {
     ) async throws -> ObjectMetadata {
         // If resuming, use resume data directly (contains original request)
         if let resumeData = resumeData {
+            // Placeholder URL is ignored when resuming - URLSession uses the URL from resume data
+            guard let placeholderURL = URL(string: "https://placeholder") else {
+                fatalError("Invalid placeholder URL literal")
+            }
             let (_, response) = try await httpClient.download(
-                URLRequest(url: URL(string: "https://placeholder")!), // ignored when resuming
+                URLRequest(url: placeholderURL),
                 to: destination,
                 resumeData: resumeData,
                 progress: progress
@@ -482,7 +486,7 @@ public final class S3Client: Sendable {
         }
         xml += "</CompleteMultipartUpload>"
 
-        let body = xml.data(using: .utf8)!
+        let body = Data(xml.utf8)
 
         let request = requestBuilder.buildRequest(
             method: "POST",

@@ -36,7 +36,9 @@ struct SigV4Signer: Sendable {
     func canonicalRequest(_ request: URLRequest, payloadHash: String) -> String {
         let method = request.httpMethod ?? "GET"
 
-        let url = request.url!
+        guard let url = request.url else {
+            fatalError("Request URL is nil")
+        }
         let path = url.path.isEmpty ? "/" : url.path
 
         let query = url.query ?? ""
@@ -88,11 +90,11 @@ struct SigV4Signer: Sendable {
 
     func signingKey(for date: Date) -> Data {
         let dateStamp = dateStamp(for: date)
-        let kSecret = "AWS4\(secretAccessKey)".data(using: .utf8)!
-        let kDate = dateStamp.data(using: .utf8)!.hmacSHA256(key: kSecret)
-        let kRegion = region.data(using: .utf8)!.hmacSHA256(key: kDate)
-        let kService = service.data(using: .utf8)!.hmacSHA256(key: kRegion)
-        let kSigning = "aws4_request".data(using: .utf8)!.hmacSHA256(key: kService)
+        let kSecret = Data("AWS4\(secretAccessKey)".utf8)
+        let kDate = Data(dateStamp.utf8).hmacSHA256(key: kSecret)
+        let kRegion = Data(region.utf8).hmacSHA256(key: kDate)
+        let kService = Data(service.utf8).hmacSHA256(key: kRegion)
+        let kSigning = Data("aws4_request".utf8).hmacSHA256(key: kService)
         return kSigning
     }
 
@@ -106,14 +108,14 @@ struct SigV4Signer: Sendable {
 
         // Build canonical request
         let canonical = canonicalRequest(request, payloadHash: payloadHash)
-        let canonicalHash = canonical.data(using: .utf8)!.sha256().hexString
+        let canonicalHash = Data(canonical.utf8).sha256().hexString
 
         // Build string to sign
         let stringToSignValue = stringToSign(canonicalRequestHash: canonicalHash, date: date)
 
         // Calculate signature
         let signingKeyValue = signingKey(for: date)
-        let signature = stringToSignValue.data(using: .utf8)!.hmacSHA256(key: signingKeyValue).hexString
+        let signature = Data(stringToSignValue.utf8).hmacSHA256(key: signingKeyValue).hexString
 
         // Get signed headers list
         var headers: [String] = []
@@ -126,7 +128,9 @@ struct SigV4Signer: Sendable {
         let scope = "\(dateStampValue)/\(region)/\(service)/aws4_request"
 
         // Build Authorization header
-        let authorization = "AWS4-HMAC-SHA256 Credential=\(accessKeyId)/\(scope), SignedHeaders=\(signedHeaders), Signature=\(signature)"
+        let credential = "\(accessKeyId)/\(scope)"
+        let authorization = "AWS4-HMAC-SHA256 Credential=\(credential), " +
+            "SignedHeaders=\(signedHeaders), Signature=\(signature)"
 
         request.setValue(authorization, forHTTPHeaderField: "Authorization")
     }

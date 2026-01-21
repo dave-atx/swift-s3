@@ -31,10 +31,11 @@ struct RequestBuilder: Sendable {
             components.path = path.isEmpty ? "/" : path
         } else {
             // Virtual-hosted style: https://bucket.endpoint/key
+            let endpointHost = configuration.endpoint.host ?? ""
             if let bucket = bucket {
-                components.host = "\(bucket).\(configuration.endpoint.host!)"
+                components.host = "\(bucket).\(endpointHost)"
             } else {
-                components.host = configuration.endpoint.host
+                components.host = endpointHost
             }
             components.port = configuration.endpoint.port
             if let key = key {
@@ -46,7 +47,10 @@ struct RequestBuilder: Sendable {
 
         components.queryItems = queryItems?.isEmpty == false ? queryItems : nil
 
-        var request = URLRequest(url: components.url!)
+        guard let url = components.url else {
+            fatalError("Failed to construct URL from components: \(components)")
+        }
+        var request = URLRequest(url: url)
         request.httpMethod = method
         request.httpBody = body
 

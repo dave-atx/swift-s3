@@ -34,7 +34,10 @@ final class XMLResponseParser: NSObject, XMLParserDelegate {
 
         guard let code = result["Code"],
               let message = result["Message"] else {
-            throw S3ParsingError(message: "Missing required error fields", responseBody: String(data: data, encoding: .utf8))
+            throw S3ParsingError(
+                message: "Missing required error fields",
+                responseBody: String(data: data, encoding: .utf8)
+            )
         }
 
         return S3APIError(
@@ -47,7 +50,13 @@ final class XMLResponseParser: NSObject, XMLParserDelegate {
 
     // MARK: - XMLParserDelegate
 
-    func parser(_ parser: XMLParser, didStartElement elementName: String, namespaceURI: String?, qualifiedName qName: String?, attributes attributeDict: [String: String] = [:]) {
+    func parser(
+        _ parser: XMLParser,
+        didStartElement elementName: String,
+        namespaceURI: String?,
+        qualifiedName qName: String?,
+        attributes attributeDict: [String: String] = [:]
+    ) {
         currentElement = elementName
         currentText = ""
         elementStack.append(elementName)
@@ -57,7 +66,12 @@ final class XMLResponseParser: NSObject, XMLParserDelegate {
         currentText += string
     }
 
-    func parser(_ parser: XMLParser, didEndElement elementName: String, namespaceURI: String?, qualifiedName qName: String?) {
+    func parser(
+        _ parser: XMLParser,
+        didEndElement elementName: String,
+        namespaceURI: String?,
+        qualifiedName qName: String?
+    ) {
         let trimmed = currentText.trimmingCharacters(in: .whitespacesAndNewlines)
         if !trimmed.isEmpty {
             result[elementName] = trimmed
@@ -72,7 +86,10 @@ final class XMLResponseParser: NSObject, XMLParserDelegate {
         parser.delegate = delegate
 
         guard parser.parse() else {
-            throw S3ParsingError(message: "Failed to parse ListBuckets XML", responseBody: String(data: data, encoding: .utf8))
+            throw S3ParsingError(
+                message: "Failed to parse ListBuckets XML",
+                responseBody: String(data: data, encoding: .utf8)
+            )
         }
 
         return ListBucketsResult(
@@ -88,7 +105,10 @@ final class XMLResponseParser: NSObject, XMLParserDelegate {
         parser.delegate = delegate
 
         guard parser.parse() else {
-            throw S3ParsingError(message: "Failed to parse ListObjects XML", responseBody: String(data: data, encoding: .utf8))
+            throw S3ParsingError(
+                message: "Failed to parse ListObjects XML",
+                responseBody: String(data: data, encoding: .utf8)
+            )
         }
 
         return ListObjectsResult(
@@ -109,7 +129,10 @@ final class XMLResponseParser: NSObject, XMLParserDelegate {
         parser.delegate = self
 
         guard parser.parse() else {
-            throw S3ParsingError(message: "Failed to parse InitiateMultipartUpload XML", responseBody: String(data: data, encoding: .utf8))
+            throw S3ParsingError(
+                message: "Failed to parse InitiateMultipartUpload XML",
+                responseBody: String(data: data, encoding: .utf8)
+            )
         }
 
         guard let uploadId = result["UploadId"],
@@ -126,7 +149,10 @@ final class XMLResponseParser: NSObject, XMLParserDelegate {
         parser.delegate = delegate
 
         guard parser.parse() else {
-            throw S3ParsingError(message: "Failed to parse ListMultipartUploads XML", responseBody: String(data: data, encoding: .utf8))
+            throw S3ParsingError(
+                message: "Failed to parse ListMultipartUploads XML",
+                responseBody: String(data: data, encoding: .utf8)
+            )
         }
 
         return ListMultipartUploadsResult(
@@ -143,7 +169,10 @@ final class XMLResponseParser: NSObject, XMLParserDelegate {
         parser.delegate = delegate
 
         guard parser.parse() else {
-            throw S3ParsingError(message: "Failed to parse ListParts XML", responseBody: String(data: data, encoding: .utf8))
+            throw S3ParsingError(
+                message: "Failed to parse ListParts XML",
+                responseBody: String(data: data, encoding: .utf8)
+            )
         }
 
         return ListPartsResult(
@@ -172,7 +201,13 @@ private final class ListBucketsParserDelegate: NSObject, XMLParserDelegate {
     private var ownerId: String?
     private var ownerDisplayName: String?
 
-    func parser(_ parser: XMLParser, didStartElement elementName: String, namespaceURI: String?, qualifiedName qName: String?, attributes attributeDict: [String: String] = [:]) {
+    func parser(
+        _ parser: XMLParser,
+        didStartElement elementName: String,
+        namespaceURI: String?,
+        qualifiedName qName: String?,
+        attributes attributeDict: [String: String] = [:]
+    ) {
         currentElement = elementName
         currentText = ""
         elementStack.append(elementName)
@@ -188,7 +223,12 @@ private final class ListBucketsParserDelegate: NSObject, XMLParserDelegate {
         currentText += string
     }
 
-    func parser(_ parser: XMLParser, didEndElement elementName: String, namespaceURI: String?, qualifiedName qName: String?) {
+    func parser(
+        _ parser: XMLParser,
+        didEndElement elementName: String,
+        namespaceURI: String?,
+        qualifiedName qName: String?
+    ) {
         let trimmed = currentText.trimmingCharacters(in: .whitespacesAndNewlines)
         let parent = elementStack.count >= 2 ? elementStack[elementStack.count - 2] : ""
 
@@ -241,7 +281,13 @@ private final class ListObjectsParserDelegate: NSObject, XMLParserDelegate {
     private var currentSize: Int64?
     private var currentStorageClass: String?
 
-    func parser(_ parser: XMLParser, didStartElement elementName: String, namespaceURI: String?, qualifiedName qName: String?, attributes attributeDict: [String: String] = [:]) {
+    func parser(
+        _ parser: XMLParser,
+        didStartElement elementName: String,
+        namespaceURI: String?,
+        qualifiedName qName: String?,
+        attributes attributeDict: [String: String] = [:]
+    ) {
         currentElement = elementName
         currentText = ""
         elementStack.append(elementName)
@@ -259,7 +305,12 @@ private final class ListObjectsParserDelegate: NSObject, XMLParserDelegate {
         currentText += string
     }
 
-    func parser(_ parser: XMLParser, didEndElement elementName: String, namespaceURI: String?, qualifiedName qName: String?) {
+    func parser(
+        _ parser: XMLParser,
+        didEndElement elementName: String,
+        namespaceURI: String?,
+        qualifiedName qName: String?
+    ) {
         let trimmed = currentText.trimmingCharacters(in: .whitespacesAndNewlines)
         let parent = elementStack.count >= 2 ? elementStack[elementStack.count - 2] : ""
 
@@ -318,7 +369,13 @@ private final class ListMultipartUploadsParserDelegate: NSObject, XMLParserDeleg
     private var currentUploadId: String?
     private var currentInitiated: Date?
 
-    func parser(_ parser: XMLParser, didStartElement elementName: String, namespaceURI: String?, qualifiedName qName: String?, attributes attributeDict: [String: String] = [:]) {
+    func parser(
+        _ parser: XMLParser,
+        didStartElement elementName: String,
+        namespaceURI: String?,
+        qualifiedName qName: String?,
+        attributes attributeDict: [String: String] = [:]
+    ) {
         currentElement = elementName
         currentText = ""
         elementStack.append(elementName)
@@ -334,7 +391,12 @@ private final class ListMultipartUploadsParserDelegate: NSObject, XMLParserDeleg
         currentText += string
     }
 
-    func parser(_ parser: XMLParser, didEndElement elementName: String, namespaceURI: String?, qualifiedName qName: String?) {
+    func parser(
+        _ parser: XMLParser,
+        didEndElement elementName: String,
+        namespaceURI: String?,
+        qualifiedName qName: String?
+    ) {
         let trimmed = currentText.trimmingCharacters(in: .whitespacesAndNewlines)
         let parent = elementStack.count >= 2 ? elementStack[elementStack.count - 2] : ""
 
@@ -378,7 +440,13 @@ private final class ListPartsParserDelegate: NSObject, XMLParserDelegate {
     private var currentSize: Int64?
     private var currentLastModified: Date?
 
-    func parser(_ parser: XMLParser, didStartElement elementName: String, namespaceURI: String?, qualifiedName qName: String?, attributes attributeDict: [String: String] = [:]) {
+    func parser(
+        _ parser: XMLParser,
+        didStartElement elementName: String,
+        namespaceURI: String?,
+        qualifiedName qName: String?,
+        attributes attributeDict: [String: String] = [:]
+    ) {
         currentElement = elementName
         currentText = ""
         elementStack.append(elementName)
@@ -395,7 +463,12 @@ private final class ListPartsParserDelegate: NSObject, XMLParserDelegate {
         currentText += string
     }
 
-    func parser(_ parser: XMLParser, didEndElement elementName: String, namespaceURI: String?, qualifiedName qName: String?) {
+    func parser(
+        _ parser: XMLParser,
+        didEndElement elementName: String,
+        namespaceURI: String?,
+        qualifiedName qName: String?
+    ) {
         let trimmed = currentText.trimmingCharacters(in: .whitespacesAndNewlines)
         let parent = elementStack.count >= 2 ? elementStack[elementStack.count - 2] : ""
 
@@ -410,7 +483,12 @@ private final class ListPartsParserDelegate: NSObject, XMLParserDelegate {
             currentLastModified = parseISO8601Date(trimmed)
         case "Part":
             if let partNumber = currentPartNumber, let etag = currentEtag {
-                parts.append(Part(partNumber: partNumber, etag: etag, size: currentSize, lastModified: currentLastModified))
+                parts.append(Part(
+                    partNumber: partNumber,
+                    etag: etag,
+                    size: currentSize,
+                    lastModified: currentLastModified
+                ))
             }
         case "IsTruncated":
             isTruncated = trimmed.lowercased() == "true"

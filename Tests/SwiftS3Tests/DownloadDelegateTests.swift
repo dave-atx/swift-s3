@@ -41,7 +41,8 @@ private final class ProgressCollector: @unchecked Sendable {
 
     // Simulate progress callback
     let session = URLSession.shared
-    let task = session.downloadTask(with: URL(string: "https://example.com")!)
+    let exampleURL = try #require(URL(string: "https://example.com"))
+    let task = session.downloadTask(with: exampleURL)
 
     delegate.urlSession(
         session,
@@ -67,7 +68,8 @@ private final class ProgressCollector: @unchecked Sendable {
     )
 
     let session = URLSession.shared
-    let task = session.downloadTask(with: URL(string: "https://example.com")!)
+    let exampleURL = try #require(URL(string: "https://example.com"))
+    let task = session.downloadTask(with: exampleURL)
 
     // NSURLSessionTransferSizeUnknown = -1
     delegate.urlSession(

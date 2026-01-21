@@ -26,13 +26,15 @@ import FoundationNetworking
         region: "us-east-1"
     )
 
-    var request = URLRequest(url: URL(string: "https://examplebucket.s3.amazonaws.com/test.txt")!)
+    let url = try #require(URL(string: "https://examplebucket.s3.amazonaws.com/test.txt"))
+    var request = URLRequest(url: url)
     request.httpMethod = "GET"
     request.setValue("examplebucket.s3.amazonaws.com", forHTTPHeaderField: "Host")
     request.setValue("20130524T000000Z", forHTTPHeaderField: "x-amz-date")
-    request.setValue("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", forHTTPHeaderField: "x-amz-content-sha256")
+    let payloadHash = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    request.setValue(payloadHash, forHTTPHeaderField: "x-amz-content-sha256")
 
-    let canonical = signer.canonicalRequest(request, payloadHash: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")
+    let canonical = signer.canonicalRequest(request, payloadHash: payloadHash)
 
     let expected = """
         GET
@@ -92,7 +94,8 @@ import FoundationNetworking
         region: "us-east-1"
     )
 
-    var request = URLRequest(url: URL(string: "https://examplebucket.s3.amazonaws.com/test.txt")!)
+    let url = try #require(URL(string: "https://examplebucket.s3.amazonaws.com/test.txt"))
+    var request = URLRequest(url: url)
     request.httpMethod = "GET"
     request.setValue("examplebucket.s3.amazonaws.com", forHTTPHeaderField: "Host")
 
@@ -102,10 +105,9 @@ import FoundationNetworking
     signer.sign(request: &request, date: date, payloadHash: payloadHash)
 
     // Verify Authorization header is set
-    let auth = request.value(forHTTPHeaderField: "Authorization")
-    #expect(auth != nil)
-    #expect(auth!.hasPrefix("AWS4-HMAC-SHA256"))
-    #expect(auth!.contains("Credential=AKIAIOSFODNN7EXAMPLE/20130524/us-east-1/s3/aws4_request"))
+    let auth = try #require(request.value(forHTTPHeaderField: "Authorization"))
+    #expect(auth.hasPrefix("AWS4-HMAC-SHA256"))
+    #expect(auth.contains("Credential=AKIAIOSFODNN7EXAMPLE/20130524/us-east-1/s3/aws4_request"))
 
     // Verify x-amz-date is set
     let amzDate = request.value(forHTTPHeaderField: "x-amz-date")

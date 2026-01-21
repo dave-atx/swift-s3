@@ -5,6 +5,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Build Commands
 
 ```bash
+# Lint the code (MUST run before builds and commits)
+swiftlint
+
+# Auto-fix lint violations
+swiftlint --fix
+
 # Build the project
 swift build
 
@@ -20,6 +26,13 @@ swift test --filter SwiftS3Tests.SigV4SignerTests/testCanonicalRequest
 # Build for Linux (using Swift Static Linux SDK)
 swift build --swift-sdk x86_64-swift-linux-musl
 ```
+
+## Linting Requirements
+
+**IMPORTANT:** Run `swiftlint` before every build and before every commit. All violations are treated as errors and must be fixed.
+
+- Run `swiftlint --fix` to auto-fix simple violations
+- Manually fix any remaining violations before proceeding
 
 ## Project Constraints
 

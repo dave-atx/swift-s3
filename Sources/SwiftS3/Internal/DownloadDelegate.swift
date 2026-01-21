@@ -33,7 +33,9 @@ final class DownloadDelegate: NSObject, URLSessionDownloadDelegate, @unchecked S
         totalBytesWritten: Int64,
         totalBytesExpectedToWrite: Int64
     ) {
-        let total: Int64? = totalBytesExpectedToWrite == NSURLSessionTransferSizeUnknown ? nil : totalBytesExpectedToWrite
+        let total: Int64? = totalBytesExpectedToWrite == NSURLSessionTransferSizeUnknown
+            ? nil
+            : totalBytesExpectedToWrite
         progressHandler?(totalBytesWritten, total)
     }
 

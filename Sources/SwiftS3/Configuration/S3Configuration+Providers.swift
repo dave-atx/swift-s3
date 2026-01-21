@@ -6,11 +6,14 @@ extension S3Configuration {
         secretAccessKey: String,
         region: String
     ) -> S3Configuration {
-        S3Configuration(
+        guard let endpoint = URL(string: "https://s3.\(region).amazonaws.com") else {
+            fatalError("Invalid AWS region for URL: \(region)")
+        }
+        return S3Configuration(
             accessKeyId: accessKeyId,
             secretAccessKey: secretAccessKey,
             region: region,
-            endpoint: URL(string: "https://s3.\(region).amazonaws.com")!,
+            endpoint: endpoint,
             usePathStyleAddressing: false
         )
     }
@@ -20,11 +23,14 @@ extension S3Configuration {
         secretAccessKey: String,
         region: String
     ) -> S3Configuration {
-        S3Configuration(
+        guard let endpoint = URL(string: "https://s3.\(region).backblazeb2.com") else {
+            fatalError("Invalid Backblaze region for URL: \(region)")
+        }
+        return S3Configuration(
             accessKeyId: accessKeyId,
             secretAccessKey: secretAccessKey,
             region: region,
-            endpoint: URL(string: "https://s3.\(region).backblazeb2.com")!,
+            endpoint: endpoint,
             usePathStyleAddressing: true
         )
     }
@@ -34,11 +40,14 @@ extension S3Configuration {
         secretAccessKey: String,
         accountId: String
     ) -> S3Configuration {
-        S3Configuration(
+        guard let endpoint = URL(string: "https://\(accountId).r2.cloudflarestorage.com") else {
+            fatalError("Invalid Cloudflare account ID for URL: \(accountId)")
+        }
+        return S3Configuration(
             accessKeyId: accessKeyId,
             secretAccessKey: secretAccessKey,
             region: "auto",
-            endpoint: URL(string: "https://\(accountId).r2.cloudflarestorage.com")!,
+            endpoint: endpoint,
             usePathStyleAddressing: true
         )
     }
@@ -47,11 +56,14 @@ extension S3Configuration {
         accessKeyId: String,
         secretAccessKey: String
     ) -> S3Configuration {
-        S3Configuration(
+        guard let endpoint = URL(string: "https://storage.googleapis.com") else {
+            fatalError("Invalid GCS endpoint URL")
+        }
+        return S3Configuration(
             accessKeyId: accessKeyId,
             secretAccessKey: secretAccessKey,
             region: "auto",
-            endpoint: URL(string: "https://storage.googleapis.com")!,
+            endpoint: endpoint,
             usePathStyleAddressing: true
         )
     }
