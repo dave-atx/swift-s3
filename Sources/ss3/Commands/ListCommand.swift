@@ -17,38 +17,12 @@ struct ListCommand: AsyncParsableCommand {
         let env = Environment()
         let config = options.resolve(with: env)
         let formatter = config.format.createFormatter()
-
-        // Validate required credentials
-        guard let keyId = config.keyId else {
-            throw ValidationError("Missing key ID. Use --key-id or set SS3_KEY_ID")
-        }
-        guard let secretKey = config.secretKey else {
-            throw ValidationError("Missing secret key. Use --secret-key or set SS3_SECRET_KEY")
-        }
-        guard let region = config.region else {
-            throw ValidationError("Missing region. Use --region or set SS3_REGION")
-        }
-        guard let endpoint = config.endpoint else {
-            throw ValidationError("Missing endpoint. Use --endpoint or set SS3_ENDPOINT")
-        }
-        guard let endpointURL = URL(string: endpoint) else {
-            throw ValidationError("Invalid endpoint URL: \(endpoint)")
-        }
-
-        let s3Config = S3Configuration(
-            accessKeyId: keyId,
-            secretAccessKey: secretKey,
-            region: region,
-            endpoint: endpointURL
-        )
-        let client = S3Client(configuration: s3Config)
+        let client = try ClientFactory.createClient(from: config)
 
         do {
             if let path = path ?? config.bucket {
-                // List objects in bucket
                 try await listObjects(client: client, path: path, formatter: formatter)
             } else {
-                // List all buckets
                 try await listBuckets(client: client, formatter: formatter)
             }
         } catch {
