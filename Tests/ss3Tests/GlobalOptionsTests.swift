@@ -23,7 +23,7 @@ import ArgumentParser
 }
 
 @Test func globalOptionsB2SetsEndpoint() throws {
-    let options = try GlobalOptions.parse(["--backblaze", "--region", "us-west-002"])
+    let options = try GlobalOptions.parse(["--b2", "--region", "us-west-002"])
 
     let env = Environment(getenv: { _ in nil })
     let resolved = options.resolve(with: env)

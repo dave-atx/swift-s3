@@ -16,8 +16,8 @@ struct GlobalOptions: ParsableArguments {
     @Option(help: "Bucket name")
     var bucket: String?
 
-    @Flag(help: "Use Backblaze B2 endpoint")
-    var backblaze: Bool = false
+    @Flag(name: .long, help: "Use Backblaze B2 endpoint")
+    var b2: Bool = false
 
     @Flag(help: "Verbose error output")
     var verbose: Bool = false
@@ -41,7 +41,7 @@ extension GlobalOptions {
         let resolvedRegion = region ?? env.region
 
         var resolvedEndpoint = endpoint ?? env.endpoint
-        if backblaze, let region = resolvedRegion {
+        if b2, let region = resolvedRegion {
             resolvedEndpoint = "https://s3.\(region).backblazeb2.com"
         }
 
