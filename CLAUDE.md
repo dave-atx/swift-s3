@@ -44,9 +44,11 @@ swift build --swift-sdk x86_64-swift-linux-musl
 
 ## Architecture
 
-SwiftS3 is a pure Swift S3-compatible API client supporting AWS S3, Backblaze B2, Cloudflare R2, and Google Cloud Storage.
+This repository contains two main components:
 
-### Core Components
+### SwiftS3 Library (`Sources/SwiftS3/`)
+
+Pure Swift S3-compatible API client supporting AWS S3, Backblaze B2, Cloudflare R2, and Google Cloud Storage.
 
 **S3Client** (`Sources/SwiftS3/S3Client.swift`): Main public API providing 16 S3 operations (bucket CRUD, object CRUD, multipart uploads). All operations are `async throws`.
 
@@ -55,6 +57,27 @@ SwiftS3 is a pure Swift S3-compatible API client supporting AWS S3, Backblaze B2
 **XMLResponseParser** (`Sources/SwiftS3/Internal/XMLResponseParser.swift`): Uses Foundation's `XMLParser` with separate delegate classes per response type to avoid shared state issues.
 
 **RequestBuilder** (`Sources/SwiftS3/Internal/RequestBuilder.swift`): Constructs URLs and headers, supporting both virtual-hosted (AWS) and path-style (Backblaze/Cloudflare/GCS) addressing.
+
+### ss3 CLI Tool (`Sources/ss3/`)
+
+Command-line interface for S3 operations using the SwiftS3 library.
+
+**GlobalOptions** (`Sources/ss3/Configuration/GlobalOptions.swift`): Handles global flags and environment variables for S3 configuration (endpoint, region, credentials, output format). Supports flag/environment resolution with B2 provider auto-configuration.
+
+**Commands:**
+- `ls`: List buckets and objects with configurable output formats
+- `cp`: Upload/download objects with parallel multipart upload support
+
+**Output Formats** (`Sources/ss3/Formatters/`):
+- `HumanFormatter`: Human-readable table output (default)
+- `JSONFormatter`: Machine-readable JSON output
+- `TSVFormatter`: Tab-separated values for scripting
+
+**Supporting Components:**
+- `S3Path` (`Sources/ss3/Utilities/S3Path.swift`): Parses local and remote paths (e.g., `s3://bucket/key`, `/local/path`)
+- `Environment` (`Sources/ss3/Configuration/Environment.swift`): Resolves `SS3_*` environment variables
+- `MultipartUploader` (`Sources/ss3/Services/MultipartUploader.swift`): Handles parallel multipart uploads for large files
+- `OutputFormat` & `OutputFormatter` (`Sources/ss3/Formatters/`): Pluggable output formatting for human/JSON/TSV
 
 ### Request Flow
 
@@ -77,6 +100,57 @@ S3Error (protocol)
 - Streaming downloads (`getObjectStream`) are macOS-only due to `FoundationNetworking` limitations on Linux
 - Uses conditional `#if !canImport(FoundationNetworking)` for platform-specific code
 
+## ss3 CLI Usage
+
+### Global Options
+
+```bash
+ss3 [--endpoint URL] [--region REGION] [--access-key ID] [--secret-key KEY] [--format FORMAT] [--b2] COMMAND
+```
+
+**Flags:**
+- `--b2`: Use Backblaze B2 endpoint (automatically configures to `https://s3.<region>.backblazeb2.com`)
+
+**Output formats:** human (default), json, tsv
+
+### Environment Variables
+
+- `SS3_ENDPOINT`: S3 endpoint URL
+- `SS3_REGION`: AWS region
+- `SS3_ACCESS_KEY`: Access key ID
+- `SS3_SECRET_KEY`: Secret access key
+
+### Commands
+
+**List buckets:**
+```bash
+ss3 ls
+ss3 ls --format json
+```
+
+**List objects in bucket:**
+```bash
+ss3 ls s3://bucket/prefix
+ss3 ls s3://bucket/ --format tsv
+```
+
+**Copy local file to S3:**
+```bash
+ss3 cp /local/file s3://bucket/key
+```
+
+**Download from S3:**
+```bash
+ss3 cp s3://bucket/key /local/file
+```
+
 ## Testing
 
 Tests use Swift Testing framework (not XCTest). Unit tests mock `HTTPClient`; live tests require `S3_TEST_CREDENTIALS` environment variable and are skipped by default.
+
+Tests include:
+- GlobalOptions flag/environment resolution
+- OutputFormatter implementations (Human, JSON, TSV)
+- S3Path parsing for local and remote paths
+- MultipartUploader functionality
+- Integration tests for ls and cp commands
