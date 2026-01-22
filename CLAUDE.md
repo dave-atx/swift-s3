@@ -77,6 +77,7 @@ Command-line interface for S3 operations using the SwiftS3 library.
 - `S3Path` (`Sources/ss3/Utilities/S3Path.swift`): Parses local and remote paths (e.g., `s3://bucket/key`, `/local/path`)
 - `Environment` (`Sources/ss3/Configuration/Environment.swift`): Resolves `SS3_*` environment variables
 - `MultipartUploader` (`Sources/ss3/Services/MultipartUploader.swift`): Handles parallel multipart uploads for large files
+- `OutputFormat` & `OutputFormatter` (`Sources/ss3/Formatters/`): Pluggable output formatting for human/JSON/TSV
 
 ### Request Flow
 
@@ -104,10 +105,11 @@ S3Error (protocol)
 ### Global Options
 
 ```bash
-ss3 [--endpoint URL] [--region REGION] [--access-key ID] [--secret-key KEY] [--format FORMAT] [--provider PROVIDER] COMMAND
+ss3 [--endpoint URL] [--region REGION] [--access-key ID] [--secret-key KEY] [--format FORMAT] [--b2] COMMAND
 ```
 
-**Supported providers:** aws (default), backblaze, cloudflare, gcs
+**Flags:**
+- `--b2`: Use Backblaze B2 endpoint (automatically configures to `https://s3.<region>.backblazeb2.com`)
 
 **Output formats:** human (default), json, tsv
 
@@ -117,7 +119,6 @@ ss3 [--endpoint URL] [--region REGION] [--access-key ID] [--secret-key KEY] [--f
 - `SS3_REGION`: AWS region
 - `SS3_ACCESS_KEY`: Access key ID
 - `SS3_SECRET_KEY`: Secret access key
-- `SS3_PROVIDER`: Provider (aws/backblaze/cloudflare/gcs) - auto-configures endpoint
 
 ### Commands
 
