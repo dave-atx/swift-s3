@@ -117,8 +117,9 @@ ss3 [--endpoint URL] [--region REGION] [--access-key ID] [--secret-key KEY] [--f
 
 - `SS3_ENDPOINT`: S3 endpoint URL
 - `SS3_REGION`: AWS region
-- `SS3_ACCESS_KEY`: Access key ID
+- `SS3_KEY_ID`: Access key ID
 - `SS3_SECRET_KEY`: Secret access key
+- `SS3_PATH_STYLE`: Set to `true` for path-style addressing (required for minio/local endpoints)
 
 ### Commands
 
@@ -146,11 +147,49 @@ ss3 cp s3://bucket/key /local/file
 
 ## Testing
 
-Tests use Swift Testing framework (not XCTest). Unit tests mock `HTTPClient`; live tests require `S3_TEST_CREDENTIALS` environment variable and are skipped by default.
+Tests use Swift Testing framework (not XCTest).
 
-Tests include:
+### Unit Tests (fast, no dependencies)
+
+```bash
+# Run all unit tests
+swift test --filter SwiftS3Tests
+swift test --filter ss3Tests
+
+# Run specific unit test
+swift test --filter SwiftS3Tests.SigV4SignerTests/testCanonicalRequest
+```
+
+### Integration Tests (requires minio)
+
+Integration tests use minio as an S3-compatible server. First-time setup:
+
+```bash
+# Download minio binary (one-time setup)
+./Scripts/setup-minio.sh
+```
+
+Then run integration tests (minio starts automatically):
+
+```bash
+# Library integration tests
+swift test --filter IntegrationTests
+
+# CLI integration tests
+swift test --filter ss3IntegrationTests
+```
+
+### Test Coverage
+
+Unit tests:
 - GlobalOptions flag/environment resolution
 - OutputFormatter implementations (Human, JSON, TSV)
 - S3Path parsing for local and remote paths
-- MultipartUploader functionality
-- Integration tests for ls and cp commands
+- SigV4 signature generation
+
+Integration tests (via minio):
+- Bucket operations (create, delete, list)
+- Object operations (put, get, head, delete, copy, list)
+- Multipart uploads
+- CLI ls command (buckets, objects, formats)
+- CLI cp command (upload, download, multipart)
