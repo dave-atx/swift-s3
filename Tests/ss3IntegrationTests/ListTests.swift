@@ -18,8 +18,8 @@ struct ListTests {
 
         #expect(result.succeeded)
         #expect(result.stdout.contains(bucket))
-        // Human format shows bucket names with timestamps
-        #expect(result.stdout.contains("buckets"))
+        // Human format shows bucket names and a summary line with "bucket" or "buckets"
+        #expect(result.stdout.contains("bucket"))
     }
 
     @Test func listBucketsJSONFormat() async throws {
