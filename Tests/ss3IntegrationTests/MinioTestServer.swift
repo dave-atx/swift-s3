@@ -62,6 +62,18 @@ actor MinioTestServer {
 
         try proc.run()
         process = proc
+
+        // Give the process a moment to start (or fail)
+        try await Task.sleep(nanoseconds: 50_000_000) // 50ms
+
+        // Check if process is still running
+        guard proc.isRunning else {
+            let exitCode = proc.terminationStatus
+            throw MinioError.serverNotReady(
+                "minio process exited immediately with code \(exitCode). Binary: \(minioBinary)"
+            )
+        }
+
         isRunning = true
 
         // Wait for server to be ready
