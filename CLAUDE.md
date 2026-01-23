@@ -29,11 +29,21 @@ swift build --swift-sdk x86_64-swift-linux-musl
 
 ## Linting Requirements
 
-**IMPORTANT:** Run `swiftlint` before every build and before every commit. All violations are treated as errors and must be fixed.
+**CRITICAL:** All code must pass linting locally before committing. Linting runs on both macOS and Linux in CI.
 
-- Run `swiftlint --fix` to auto-fix simple violations
+**Before every commit, verify linting passes on BOTH platforms:**
+
+```bash
+# On macOS
+swiftlint --strict
+
+# On Linux (using Docker or WSL)
+docker run --rm -v $(pwd):/src swift:6.2-noble bash -c "cd /src && swiftlint --strict"
+```
+
+- Run `swiftlint --fix` locally to auto-fix simple violations
 - Manually fix any remaining violations before proceeding
-- SwiftLint must pass on macOS before committing (Linux CI runs linting on macOS as well)
+- Do not commit code with linting violations - CI will reject it
 - All code must pass `swiftlint --strict` without violations
 
 ## Project Constraints

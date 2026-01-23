@@ -6,3 +6,4 @@ swift code rules
 - Do not use external libraries
 - Do not use `unsafe`, `@unchecked`, or `nonisolated(unsafe)` - prefer safe alternatives
 - Use Swift Plugin Manager and Swift Test
+- **MUST pass swiftlint --strict on both macOS and Linux before any commit**
