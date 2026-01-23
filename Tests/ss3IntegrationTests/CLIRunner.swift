@@ -20,10 +20,8 @@ enum CLIRunner {
             "../../.build/debug/ss3"
         ]
 
-        for path in possiblePaths {
-            if FileManager.default.fileExists(atPath: path) {
-                return path
-            }
+        for path in possiblePaths where FileManager.default.fileExists(atPath: path) {
+            return path
         }
 
         // Fall back to building the path from current directory

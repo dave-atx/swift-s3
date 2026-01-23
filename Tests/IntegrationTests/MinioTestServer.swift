@@ -13,6 +13,13 @@ actor MinioTestServer {
     static let secretKey = "minioadmin"
     static let endpoint = "http://127.0.0.1:\(port)"
 
+    static var endpointURL: URL {
+        guard let url = URL(string: endpoint) else {
+            fatalError("Invalid minio endpoint URL: \(endpoint)")
+        }
+        return url
+    }
+
     private var process: Process?
     private var dataDirectory: URL?
     private var isRunning = false
@@ -77,7 +84,7 @@ actor MinioTestServer {
 
     /// Polls the minio health endpoint until the server is ready.
     private func waitForReady() async throws {
-        let healthURL = URL(string: "\(Self.endpoint)/minio/health/live")!
+        let healthURL = Self.endpointURL.appendingPathComponent("minio/health/live")
         let maxAttempts = 30
         let delayNanoseconds: UInt64 = 100_000_000 // 100ms
 
@@ -109,10 +116,8 @@ actor MinioTestServer {
             "../../.minio/minio"
         ]
 
-        for path in possiblePaths {
-            if FileManager.default.fileExists(atPath: path) {
-                return path
-            }
+        for path in possiblePaths where FileManager.default.fileExists(atPath: path) {
+            return path
         }
 
         // Fall back to absolute path from current directory

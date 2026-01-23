@@ -33,6 +33,8 @@ swift build --swift-sdk x86_64-swift-linux-musl
 
 - Run `swiftlint --fix` to auto-fix simple violations
 - Manually fix any remaining violations before proceeding
+- SwiftLint must pass on macOS before committing (Linux CI runs linting on macOS as well)
+- All code must pass `swiftlint --strict` without violations
 
 ## Project Constraints
 

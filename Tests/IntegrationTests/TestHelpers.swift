@@ -8,7 +8,7 @@ enum TestConfig {
             accessKeyId: MinioTestServer.accessKey,
             secretAccessKey: MinioTestServer.secretKey,
             region: "us-east-1",
-            endpoint: URL(string: MinioTestServer.endpoint)!,
+            endpoint: MinioTestServer.endpointURL,
             usePathStyleAddressing: true
         )
     }
