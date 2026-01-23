@@ -13,6 +13,20 @@ enum S3Path: Equatable, Sendable {
     }
 
     static func parse(_ path: String, defaultBucket: String? = nil) -> S3Path {
+        // Handle s3:// prefix
+        if path.hasPrefix("s3://") {
+            let withoutPrefix = String(path.dropFirst(5))  // Remove "s3://"
+            let components = withoutPrefix.split(separator: "/", maxSplits: 1, omittingEmptySubsequences: false)
+            let bucket = String(components[0])
+
+            if components.count == 1 || components[1].isEmpty {
+                return .remote(bucket: bucket, key: nil)
+            }
+
+            let key = String(components[1])
+            return .remote(bucket: bucket, key: key)
+        }
+
         // Absolute paths are always local
         if path.hasPrefix("/") {
             return .local(path)
