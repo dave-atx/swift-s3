@@ -36,8 +36,9 @@ enum CLIRunner {
         [
             "SS3_ENDPOINT": MinioTestServer.endpoint,
             "SS3_REGION": "us-east-1",
-            "SS3_ACCESS_KEY": MinioTestServer.accessKey,
-            "SS3_SECRET_KEY": MinioTestServer.secretKey
+            "SS3_KEY_ID": MinioTestServer.accessKey,
+            "SS3_SECRET_KEY": MinioTestServer.secretKey,
+            "SS3_PATH_STYLE": "true"
         ]
     }
 

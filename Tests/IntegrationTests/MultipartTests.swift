@@ -22,9 +22,10 @@ struct MultipartTests {
         #expect(!upload.uploadId.isEmpty)
         #expect(upload.key == key)
 
-        // Upload two parts (minimum part size for S3 is 5MB, but minio is more lenient)
-        let part1Data = randomData(size: 1024)
-        let part2Data = randomData(size: 1024)
+        // Upload two parts - minimum part size for S3/minio is 5MB
+        let partSize = 5 * 1024 * 1024  // 5MB
+        let part1Data = Data(repeating: 0x41, count: partSize)
+        let part2Data = Data(repeating: 0x42, count: partSize)
 
         let completedPart1 = try await client.uploadPart(
             bucket: bucket,
