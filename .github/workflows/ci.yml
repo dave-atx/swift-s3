@@ -53,9 +53,9 @@ jobs:
       - name: Build
         run: swift build
       - name: Run Library Integration Tests
-        run: swift test --filter IntegrationTests
+        run: swift test --filter IntegrationTests --no-parallel
       - name: Run CLI Integration Tests
-        run: swift test --filter ss3IntegrationTests
+        run: swift test --filter ss3IntegrationTests --no-parallel
 
   integration-tests-linux:
     name: Integration Tests (Linux)
@@ -71,6 +71,6 @@ jobs:
       - name: Build
         run: swift build
       - name: Run Library Integration Tests
-        run: swift test --filter IntegrationTests
+        run: swift test --filter IntegrationTests --no-parallel
       - name: Run CLI Integration Tests
-        run: swift test --filter ss3IntegrationTests
+        run: swift test --filter ss3IntegrationTests --no-parallel
