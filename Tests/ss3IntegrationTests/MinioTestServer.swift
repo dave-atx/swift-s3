@@ -110,8 +110,20 @@ actor MinioTestServer {
     }
 
     private func findMinioBinary() -> String {
-        // Look relative to the test file location
-        // Tests run from the package root, so .minio/minio should work
+        // Navigate from the source file location to find the project root
+        // This file is at Tests/ss3IntegrationTests/MinioTestServer.swift
+        // So project root is ../../ from this file
+        let sourceFile = #file
+        let sourceDir = URL(fileURLWithPath: sourceFile).deletingLastPathComponent()
+        let testsDir = sourceDir.deletingLastPathComponent()
+        let projectRoot = testsDir.deletingLastPathComponent()
+        let minioPath = projectRoot.appendingPathComponent(".minio/minio").path
+
+        if FileManager.default.fileExists(atPath: minioPath) {
+            return minioPath
+        }
+
+        // Fall back to checking relative paths from current working directory
         let possiblePaths = [
             ".minio/minio",
             "../.minio/minio",
@@ -122,9 +134,8 @@ actor MinioTestServer {
             return path
         }
 
-        // Fall back to absolute path from current directory
-        let cwd = FileManager.default.currentDirectoryPath
-        return "\(cwd)/.minio/minio"
+        // Last resort: return the expected path for error message
+        return minioPath
     }
 }
 
