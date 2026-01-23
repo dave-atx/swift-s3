@@ -19,6 +19,9 @@ struct GlobalOptions: ParsableArguments {
     @Flag(name: .long, help: "Use Backblaze B2 endpoint")
     var b2: Bool = false
 
+    @Flag(name: .long, help: "Use path-style addressing (required for minio/local endpoints)")
+    var pathStyle: Bool = false
+
     @Flag(help: "Verbose error output")
     var verbose: Bool = false
 
@@ -32,6 +35,7 @@ struct ResolvedConfiguration: Sendable {
     let region: String?
     let endpoint: String?
     let bucket: String?
+    let pathStyle: Bool
     let verbose: Bool
     let format: OutputFormat
 }
@@ -51,6 +55,7 @@ extension GlobalOptions {
             region: resolvedRegion,
             endpoint: resolvedEndpoint,
             bucket: bucket ?? env.bucket,
+            pathStyle: pathStyle || env.pathStyle,
             verbose: verbose,
             format: format
         )

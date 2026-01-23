@@ -24,7 +24,8 @@ enum ClientFactory {
             accessKeyId: keyId,
             secretAccessKey: secretKey,
             region: region,
-            endpoint: endpointURL
+            endpoint: endpointURL,
+            usePathStyleAddressing: config.pathStyle
         )
         return S3Client(configuration: s3Config)
     }
