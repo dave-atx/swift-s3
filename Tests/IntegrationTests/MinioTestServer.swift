@@ -49,10 +49,12 @@ actor MinioTestServer {
         let proc = Process()
         proc.executableURL = URL(fileURLWithPath: minioBinary)
         proc.arguments = ["server", tempDir.path, "--address", ":\(Self.port)"]
-        proc.environment = [
-            "MINIO_ROOT_USER": Self.accessKey,
-            "MINIO_ROOT_PASSWORD": Self.secretKey
-        ]
+
+        // Inherit current environment and add minio-specific vars
+        var environment = ProcessInfo.processInfo.environment
+        environment["MINIO_ROOT_USER"] = Self.accessKey
+        environment["MINIO_ROOT_PASSWORD"] = Self.secretKey
+        proc.environment = environment
 
         // Suppress output
         proc.standardOutput = FileHandle.nullDevice
