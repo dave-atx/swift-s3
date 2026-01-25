@@ -2,31 +2,39 @@ import Testing
 import ArgumentParser
 @testable import ss3
 
-@Test func globalOptionsResolvesFromFlag() throws {
-    let options = try GlobalOptions.parse(["--key-id", "flag-key"])
+@Test func globalOptionsParsesProfile() throws {
+    let options = try GlobalOptions.parse(["--profile", "e2", "https://s3.example.com"])
 
-    let env = Environment(getenv: { _ in "env-key" })
-    let resolved = options.resolve(with: env)
-
-    #expect(resolved.keyId == "flag-key")
+    #expect(options.profileArgs == ["e2", "https://s3.example.com"])
 }
 
-@Test func globalOptionsResolvesFromEnv() throws {
-    let options = try GlobalOptions.parse([])
-    let env = Environment(getenv: { key in
-        if key == "SS3_ACCESS_KEY" { return "env-key" }
-        return nil
-    })
-    let resolved = options.resolve(with: env)
-
-    #expect(resolved.keyId == "env-key")
+@Test func globalOptionsRequiresTwoProfileArgs() throws {
+    // Missing URL
+    #expect(throws: (any Error).self) {
+        let options = try GlobalOptions.parse(["--profile", "e2"])
+        _ = try options.parseProfile()
+    }
 }
 
-@Test func globalOptionsB2SetsEndpoint() throws {
-    let options = try GlobalOptions.parse(["--b2", "--region", "us-west-002"])
+@Test func globalOptionsParseProfileReturnsProfile() throws {
+    let options = try GlobalOptions.parse(["--profile", "e2", "https://key:secret@s3.example.com"])
+    let profile = try options.parseProfile()
 
-    let env = Environment(getenv: { _ in nil })
-    let resolved = options.resolve(with: env)
+    #expect(profile.name == "e2")
+    #expect(profile.accessKeyId == "key")
+}
 
-    #expect(resolved.endpoint == "https://s3.us-west-002.backblazeb2.com")
+@Test func globalOptionsFormatDefault() throws {
+    let options = try GlobalOptions.parse(["--profile", "e2", "https://s3.example.com"])
+    #expect(options.format == .human)
+}
+
+@Test func globalOptionsFormatJson() throws {
+    let options = try GlobalOptions.parse(["--profile", "e2", "https://s3.example.com", "--format", "json"])
+    #expect(options.format == .json)
+}
+
+@Test func globalOptionsVerbose() throws {
+    let options = try GlobalOptions.parse(["--profile", "e2", "https://s3.example.com", "--verbose"])
+    #expect(options.verbose == true)
 }
