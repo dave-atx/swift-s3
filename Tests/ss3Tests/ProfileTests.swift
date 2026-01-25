@@ -45,3 +45,57 @@ import Testing
         try Profile.parse(name: "e2", url: "not a url")
     }
 }
+
+@Test func profileResolvesWithURLCredentials() throws {
+    let profile = try Profile.parse(name: "e2", url: "https://key:secret@s3.example.com")
+    let env = Environment(getenv: { _ in nil })
+    let resolved = try profile.resolve(with: env)
+
+    #expect(resolved.accessKeyId == "key")
+    #expect(resolved.secretAccessKey == "secret")
+}
+
+@Test func profileResolvesWithEnvCredentials() throws {
+    let profile = try Profile.parse(name: "e2", url: "https://s3.example.com")
+    let env = Environment(getenv: { key in
+        switch key {
+        case "SS3_E2_ACCESS_KEY": return "env-key"
+        case "SS3_E2_SECRET_KEY": return "env-secret"
+        default: return nil
+        }
+    })
+    let resolved = try profile.resolve(with: env)
+
+    #expect(resolved.accessKeyId == "env-key")
+    #expect(resolved.secretAccessKey == "env-secret")
+}
+
+@Test func profileURLCredentialsTakePrecedence() throws {
+    let profile = try Profile.parse(name: "e2", url: "https://url-key:url-secret@s3.example.com")
+    let env = Environment(getenv: { key in
+        switch key {
+        case "SS3_E2_ACCESS_KEY": return "env-key"
+        case "SS3_E2_SECRET_KEY": return "env-secret"
+        default: return nil
+        }
+    })
+    let resolved = try profile.resolve(with: env)
+
+    #expect(resolved.accessKeyId == "url-key")
+    #expect(resolved.secretAccessKey == "url-secret")
+}
+
+@Test func profileThrowsWhenNoCredentials() throws {
+    let profile = try Profile.parse(name: "e2", url: "https://s3.example.com")
+    let env = Environment(getenv: { _ in nil })
+
+    #expect(throws: ProfileError.self) {
+        try profile.resolve(with: env)
+    }
+}
+
+@Test func profileEnvVarNormalizesName() {
+    #expect(Profile.envVarPrefix(for: "prod-backup") == "SS3_PROD_BACKUP")
+    #expect(Profile.envVarPrefix(for: "my.profile") == "SS3_MY_PROFILE")
+    #expect(Profile.envVarPrefix(for: "e2") == "SS3_E2")
+}

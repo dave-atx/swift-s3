@@ -14,7 +14,7 @@ import ArgumentParser
 @Test func globalOptionsResolvesFromEnv() throws {
     let options = try GlobalOptions.parse([])
     let env = Environment(getenv: { key in
-        if key == "SS3_KEY_ID" { return "env-key" }
+        if key == "SS3_ACCESS_KEY" { return "env-key" }
         return nil
     })
     let resolved = options.resolve(with: env)

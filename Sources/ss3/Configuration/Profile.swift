@@ -111,3 +111,34 @@ struct Profile: Sendable, Equatable {
         return "SS3_\(String(normalized))"
     }
 }
+
+struct ResolvedProfile: Sendable {
+    let name: String
+    let endpoint: URL
+    let region: String
+    let bucket: String?
+    let accessKeyId: String
+    let secretAccessKey: String
+}
+
+extension Profile {
+    func resolve(with env: Environment) throws -> ResolvedProfile {
+        let envPrefix = Profile.envVarPrefix(for: name)
+
+        let resolvedAccessKey = accessKeyId ?? env.value(for: "\(envPrefix)_ACCESS_KEY")
+        let resolvedSecretKey = secretAccessKey ?? env.value(for: "\(envPrefix)_SECRET_KEY")
+
+        guard let accessKey = resolvedAccessKey, let secretKey = resolvedSecretKey else {
+            throw ProfileError.missingCredentials(profile: name)
+        }
+
+        return ResolvedProfile(
+            name: name,
+            endpoint: endpoint,
+            region: region,
+            bucket: bucket,
+            accessKeyId: accessKey,
+            secretAccessKey: secretKey
+        )
+    }
+}

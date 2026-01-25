@@ -38,19 +38,19 @@ struct ResolvedConfiguration: Sendable {
 
 extension GlobalOptions {
     func resolve(with env: Environment) -> ResolvedConfiguration {
-        let resolvedRegion = region ?? env.region
+        let resolvedRegion = region ?? env.value(for: "SS3_REGION")
 
-        var resolvedEndpoint = endpoint ?? env.endpoint
+        var resolvedEndpoint = endpoint ?? env.value(for: "SS3_ENDPOINT")
         if b2, let region = resolvedRegion {
             resolvedEndpoint = "https://s3.\(region).backblazeb2.com"
         }
 
         return ResolvedConfiguration(
-            keyId: keyId ?? env.keyId,
-            secretKey: secretKey ?? env.secretKey,
+            keyId: keyId ?? env.value(for: "SS3_ACCESS_KEY"),
+            secretKey: secretKey ?? env.value(for: "SS3_SECRET_KEY"),
             region: resolvedRegion,
             endpoint: resolvedEndpoint,
-            bucket: bucket ?? env.bucket,
+            bucket: bucket ?? env.value(for: "SS3_BUCKET"),
             verbose: verbose,
             format: format
         )
