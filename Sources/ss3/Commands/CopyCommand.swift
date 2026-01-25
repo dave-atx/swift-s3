@@ -98,12 +98,16 @@ struct CopyCommand: AsyncParsableCommand {
             fileName: fileName
         )
 
-        let data = try Data(contentsOf: fileURL)
+        let attributes = try FileManager.default.attributesOfItem(atPath: filePath)
+        guard let fileSize = attributes[.size] as? Int64 else {
+            throw ValidationError("Cannot determine file size for \(filePath)")
+        }
 
-        if data.count > multipartThreshold {
+        if fileSize > multipartThreshold {
             let uploader = MultipartUploader(client: client, chunkSize: chunkSize, maxParallel: parallel)
-            try await uploader.upload(bucket: bucket, key: key, fileURL: fileURL, fileSize: Int64(data.count))
+            try await uploader.upload(bucket: bucket, key: key, fileURL: fileURL, fileSize: fileSize)
         } else {
+            let data = try Data(contentsOf: fileURL)
             _ = try await client.putObject(bucket: bucket, key: key, data: data)
         }
 
