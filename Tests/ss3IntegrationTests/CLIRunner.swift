@@ -17,7 +17,8 @@ enum CLIRunner {
     /// Profile URL for minio test server.
     static var profileURL: String {
         let endpoint = MinioTestServer.endpoint
-        return "\(endpoint.replacingOccurrences(of: "http://", with: "http://\(MinioTestServer.accessKey):\(MinioTestServer.secretKey)@"))"
+        let credentials = "\(MinioTestServer.accessKey):\(MinioTestServer.secretKey)"
+        return endpoint.replacingOccurrences(of: "http://", with: "http://\(credentials)@")
     }
 
     /// Path to the built ss3 binary.
@@ -38,8 +39,8 @@ enum CLIRunner {
         return "\(cwd)/.build/debug/ss3"
     }
 
-    /// Base arguments for profile-based CLI invocation.
-    static var baseArgs: [String] {
+    /// Profile arguments for CLI invocation.
+    static var profileArgs: [String] {
         ["--profile", profileName, profileURL, "--path-style"]
     }
 
@@ -53,10 +54,21 @@ enum CLIRunner {
     }
 
     /// Runs ss3 with the given arguments array.
+    /// Arguments: first arg is the subcommand, profile options are inserted after it.
     static func run(arguments: [String], env: [String: String] = [:]) async throws -> CLIResult {
+        // Build full arguments: subcommand + profile options + remaining args
+        // e.g., ["ls"] -> ["ls", "--profile", "minio", "url", "--path-style"]
+        // e.g., ["ls", "minio:bucket/"] -> ["ls", "--profile", ..., "minio:bucket/"]
+        var fullArgs: [String] = []
+        if let subcommand = arguments.first {
+            fullArgs.append(subcommand)
+            fullArgs.append(contentsOf: profileArgs)
+            fullArgs.append(contentsOf: arguments.dropFirst())
+        }
+
         let process = Process()
         process.executableURL = URL(fileURLWithPath: binaryPath)
-        process.arguments = baseArgs + arguments
+        process.arguments = fullArgs
 
         // Use process environment with any custom additions
         var environment = ProcessInfo.processInfo.environment
