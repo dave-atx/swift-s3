@@ -28,7 +28,7 @@ struct CopyCommand: AsyncParsableCommand {
     func run() async throws {
         let profile = try options.parseProfile()
         let env = Environment()
-        let resolved = try profile.resolve(with: env)
+        let resolved = try profile.resolve(with: env, pathStyle: options.pathStyle)
         let formatter = options.format.createFormatter()
 
         let sourcePath = S3Path.parse(source)

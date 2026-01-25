@@ -4,6 +4,9 @@ struct GlobalOptions: ParsableArguments {
     @Option(name: .customLong("profile"), parsing: .upToNextOption, help: "Profile: <name> <url>")
     var profileArgs: [String] = []
 
+    @Flag(name: .long, help: "Use path-style addressing (required for minio/local endpoints)")
+    var pathStyle: Bool = false
+
     @Flag(help: "Verbose error output")
     var verbose: Bool = false
 

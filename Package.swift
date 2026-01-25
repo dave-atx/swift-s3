@@ -48,6 +48,14 @@ let package = Package(
         .testTarget(
             name: "ss3Tests",
             dependencies: ["ss3"]
+        ),
+        .testTarget(
+            name: "IntegrationTests",
+            dependencies: ["SwiftS3"]
+        ),
+        .testTarget(
+            name: "ss3IntegrationTests",
+            dependencies: ["ss3"]
         )
     ]
 )

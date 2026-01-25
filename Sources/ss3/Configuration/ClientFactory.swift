@@ -7,7 +7,8 @@ enum ClientFactory {
             accessKeyId: profile.accessKeyId,
             secretAccessKey: profile.secretAccessKey,
             region: profile.region,
-            endpoint: profile.endpoint
+            endpoint: profile.endpoint,
+            usePathStyleAddressing: profile.pathStyle
         )
         return S3Client(configuration: config)
     }

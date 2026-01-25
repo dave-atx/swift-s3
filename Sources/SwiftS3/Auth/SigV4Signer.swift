@@ -41,11 +41,8 @@ struct SigV4Signer: Sendable {
         }
         let path = url.path.isEmpty ? "/" : url.path
 
-        let query = url.query ?? ""
-        let sortedQuery = query
-            .split(separator: "&")
-            .sorted()
-            .joined(separator: "&")
+        // Build canonical query string with proper AWS SigV4 encoding
+        let sortedQuery = canonicalQueryString(from: url)
 
         // Get sorted headers (lowercase keys)
         var headers: [(String, String)] = []
@@ -96,6 +93,38 @@ struct SigV4Signer: Sendable {
         let kService = Data(service.utf8).hmacSHA256(key: kRegion)
         let kSigning = Data("aws4_request".utf8).hmacSHA256(key: kService)
         return kSigning
+    }
+
+    /// Build canonical query string per AWS SigV4 spec.
+    /// Each parameter name and value must be URI-encoded, then sorted by name.
+    private func canonicalQueryString(from url: URL) -> String {
+        guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+              let queryItems = components.queryItems, !queryItems.isEmpty else {
+            return ""
+        }
+
+        // AWS SigV4 unreserved characters that should NOT be encoded
+        // A-Z, a-z, 0-9, hyphen (-), underscore (_), period (.), tilde (~)
+        var allowed = CharacterSet.alphanumerics
+        allowed.insert(charactersIn: "-_.~")
+
+        // URI-encode each name and value, then sort by name
+        let encoded = queryItems.map { item -> (String, String) in
+            let name = item.name.addingPercentEncoding(withAllowedCharacters: allowed) ?? item.name
+            let value = (item.value ?? "").addingPercentEncoding(withAllowedCharacters: allowed) ?? ""
+            return (name, value)
+        }
+
+        // Sort by encoded name (and value if names are equal)
+        let sorted = encoded.sorted { (a, b) in
+            if a.0 != b.0 {
+                return a.0 < b.0
+            }
+            return a.1 < b.1
+        }
+
+        // Join as name=value pairs
+        return sorted.map { "\($0.0)=\($0.1)" }.joined(separator: "&")
     }
 
     func sign(request: inout URLRequest, date: Date, payloadHash: String) {

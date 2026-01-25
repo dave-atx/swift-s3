@@ -119,10 +119,11 @@ struct ResolvedProfile: Sendable {
     let bucket: String?
     let accessKeyId: String
     let secretAccessKey: String
+    let pathStyle: Bool
 }
 
 extension Profile {
-    func resolve(with env: Environment) throws -> ResolvedProfile {
+    func resolve(with env: Environment, pathStyle: Bool = false) throws -> ResolvedProfile {
         let envPrefix = Profile.envVarPrefix(for: name)
 
         let resolvedAccessKey = accessKeyId ?? env.value(for: "\(envPrefix)_ACCESS_KEY")
@@ -138,7 +139,8 @@ extension Profile {
             region: region,
             bucket: bucket,
             accessKeyId: accessKey,
-            secretAccessKey: secretKey
+            secretAccessKey: secretKey,
+            pathStyle: pathStyle
         )
     }
 }
