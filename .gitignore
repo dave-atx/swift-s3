@@ -63,3 +63,6 @@ fastlane/test_output
 
 # Worktrees
 .worktrees/
+
+# Minio binary (downloaded by setup script)
+.minio/

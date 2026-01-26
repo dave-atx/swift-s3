@@ -10,23 +10,42 @@ struct ListCommand: AsyncParsableCommand {
 
     @OptionGroup var options: GlobalOptions
 
-    @Argument(help: "Bucket name or bucket/prefix to list")
+    @Argument(help: "Path to list (profile: or profile:bucket/prefix)")
     var path: String?
 
     func run() async throws {
+        let profile = try options.parseProfile()
         let env = Environment()
-        let config = options.resolve(with: env)
-        let formatter = config.format.createFormatter()
-        let client = try ClientFactory.createClient(from: config)
+        let resolved = try profile.resolve(with: env, pathStyle: options.pathStyle)
+        let formatter = options.format.createFormatter()
+        let client = ClientFactory.createClient(from: resolved)
 
         do {
-            if let path = path ?? config.bucket {
-                try await listObjects(client: client, path: path, formatter: formatter)
+            if let path = path {
+                let parsed = S3Path.parse(path)
+                guard case .remote(let pathProfile, let bucket, let prefix) = parsed else {
+                    throw ValidationError("Path must use profile format: \(profile.name):bucket/prefix")
+                }
+
+                guard pathProfile == profile.name else {
+                    throw ValidationError("Path profile '\(pathProfile)' doesn't match --profile '\(profile.name)'")
+                }
+
+                if let bucket = bucket {
+                    try await listObjects(
+                        client: client,
+                        bucket: bucket,
+                        prefix: prefix,
+                        formatter: formatter
+                    )
+                } else {
+                    try await listBuckets(client: client, formatter: formatter)
+                }
             } else {
                 try await listBuckets(client: client, formatter: formatter)
             }
         } catch {
-            printError(formatter.formatError(error, verbose: config.verbose))
+            printError(formatter.formatError(error, verbose: options.verbose))
             throw ExitCode(1)
         }
     }
@@ -38,15 +57,10 @@ struct ListCommand: AsyncParsableCommand {
 
     private func listObjects(
         client: S3Client,
-        path: String,
+        bucket: String,
+        prefix: String?,
         formatter: any OutputFormatter
     ) async throws {
-        let parsed = S3Path.parse(path)
-
-        guard case .remote(let bucket, let prefix) = parsed else {
-            throw ValidationError("Path must be a bucket or bucket/prefix, got local path: \(path)")
-        }
-
         var allObjects: [S3Object] = []
         var allPrefixes: [String] = []
         var continuationToken: String?
