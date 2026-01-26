@@ -126,8 +126,9 @@ extension Profile {
     func resolve(with env: Environment, pathStyle: Bool = false) throws -> ResolvedProfile {
         let envPrefix = Profile.envVarPrefix(for: name)
 
-        let resolvedAccessKey = accessKeyId ?? env.value(for: "\(envPrefix)_ACCESS_KEY")
-        let resolvedSecretKey = secretAccessKey ?? env.value(for: "\(envPrefix)_SECRET_KEY")
+        // Environment variables take precedence over URL credentials
+        let resolvedAccessKey = env.value(for: "\(envPrefix)_ACCESS_KEY") ?? accessKeyId
+        let resolvedSecretKey = env.value(for: "\(envPrefix)_SECRET_KEY") ?? secretAccessKey
 
         guard let accessKey = resolvedAccessKey, let secretKey = resolvedSecretKey else {
             throw ProfileError.missingCredentials(profile: name)

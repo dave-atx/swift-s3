@@ -70,7 +70,7 @@ import Testing
     #expect(resolved.secretAccessKey == "env-secret")
 }
 
-@Test func profileURLCredentialsTakePrecedence() throws {
+@Test func profileEnvCredentialsOverrideURL() throws {
     let profile = try Profile.parse(name: "e2", url: "https://url-key:url-secret@s3.example.com")
     let env = Environment(getenv: { key in
         switch key {
@@ -79,6 +79,16 @@ import Testing
         default: return nil
         }
     })
+    let resolved = try profile.resolve(with: env)
+
+    // Env vars should override URL credentials
+    #expect(resolved.accessKeyId == "env-key")
+    #expect(resolved.secretAccessKey == "env-secret")
+}
+
+@Test func profileURLCredentialsUsedWhenNoEnvVars() throws {
+    let profile = try Profile.parse(name: "e2", url: "https://url-key:url-secret@s3.example.com")
+    let env = Environment(getenv: { _ in nil })  // No env vars
     let resolved = try profile.resolve(with: env)
 
     #expect(resolved.accessKeyId == "url-key")
