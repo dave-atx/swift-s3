@@ -1,6 +1,6 @@
 enum S3Path: Equatable, Sendable {
     case local(String)
-    case remote(bucket: String, key: String?)
+    case remote(profile: String, bucket: String?, key: String?)
 
     var isLocal: Bool {
         if case .local = self { return true }
@@ -12,46 +12,42 @@ enum S3Path: Equatable, Sendable {
         return false
     }
 
-    static func parse(_ path: String, defaultBucket: String? = nil) -> S3Path {
-        // Handle s3:// prefix
-        if path.hasPrefix("s3://") {
-            let withoutPrefix = String(path.dropFirst(5))  // Remove "s3://"
-            let components = withoutPrefix.split(separator: "/", maxSplits: 1, omittingEmptySubsequences: false)
-            let bucket = String(components[0])
+    var profile: String? {
+        if case .remote(let profile, _, _) = self { return profile }
+        return nil
+    }
 
-            if components.count == 1 || components[1].isEmpty {
-                return .remote(bucket: bucket, key: nil)
-            }
-
-            let key = String(components[1])
-            return .remote(bucket: bucket, key: key)
-        }
-
-        // Absolute paths are always local
-        if path.hasPrefix("/") {
+    static func parse(_ path: String) -> S3Path {
+        // Colon is the discriminator - if present, it's a profile path
+        guard let colonIndex = path.firstIndex(of: ":") else {
+            // No colon = local path
             return .local(path)
         }
 
-        // Relative paths starting with ./ or ../ are local
-        if path.hasPrefix("./") || path.hasPrefix("../") {
-            return .local(path)
+        let profile = String(path[..<colonIndex])
+        let remainder = String(path[path.index(after: colonIndex)...])
+
+        // Handle list buckets cases: "e2:" or "e2:/" or "e2:."
+        if remainder.isEmpty || remainder == "/" || remainder == "." {
+            return .remote(profile: profile, bucket: nil, key: nil)
         }
 
-        // If we have a default bucket and path doesn't look like bucket/key
-        if let bucket = defaultBucket {
-            return .remote(bucket: bucket, key: path)
-        }
-
-        // Parse as bucket/key
-        let components = path.split(separator: "/", maxSplits: 1)
+        // Parse bucket/key from remainder
+        let components = remainder.split(separator: "/", maxSplits: 1, omittingEmptySubsequences: false)
         let bucket = String(components[0])
 
         if components.count == 1 {
-            // Just bucket name, possibly with trailing slash
-            return .remote(bucket: bucket, key: nil)
+            // Just bucket, no slash after
+            return .remote(profile: profile, bucket: bucket, key: nil)
         }
 
-        let key = String(components[1])
-        return .remote(bucket: bucket, key: key.isEmpty ? nil : key)
+        // Has slash - check what's after
+        let keyPart = String(components[1])
+        if keyPart.isEmpty {
+            // Trailing slash only: "e2:bucket/"
+            return .remote(profile: profile, bucket: bucket, key: nil)
+        }
+
+        return .remote(profile: profile, bucket: bucket, key: keyPart)
     }
 }

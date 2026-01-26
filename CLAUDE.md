@@ -114,47 +114,56 @@ S3Error (protocol)
 
 ## ss3 CLI Usage
 
-### Global Options
+### Profile Option
 
 ```bash
-ss3 [--endpoint URL] [--region REGION] [--access-key ID] [--secret-key KEY] [--format FORMAT] [--b2] COMMAND
+ss3 --profile <name> <url> COMMAND [OPTIONS]
 ```
 
-**Flags:**
-- `--b2`: Use Backblaze B2 endpoint (automatically configures to `https://s3.<region>.backblazeb2.com`)
+**Profile URL format:**
+- Credentials in URL: `https://accessKey:secretKey@s3.example.com`
+- Virtual-host bucket/region: `https://mybucket.s3.us-west-2.example.com`
+- Simple endpoint: `https://s3.example.com` (region defaults to "auto")
+
+**Environment variables for credentials:**
+- `SS3_<NAME>_ACCESS_KEY`: Access key for profile `<NAME>`
+- `SS3_<NAME>_SECRET_KEY`: Secret key for profile `<NAME>`
+- Profile name is uppercased, non-alphanumeric chars become underscores
 
 **Output formats:** human (default), json, tsv
 
-### Environment Variables
+### Path Format
 
-- `SS3_ENDPOINT`: S3 endpoint URL
-- `SS3_REGION`: AWS region
-- `SS3_KEY_ID`: Access key ID
-- `SS3_SECRET_KEY`: Secret access key
-- `SS3_PATH_STYLE`: Set to `true` for path-style addressing (required for minio/local endpoints)
+Paths use `profile:bucket/key` format:
+- `e2:` or `e2:/` - list buckets
+- `e2:mybucket` - list bucket root
+- `e2:mybucket/prefix` - list with prefix
+- `e2:mybucket/path/file.txt` - specific object
+
+Local paths have no colon: `./file.txt`, `/path/to/file`, `file.txt`
 
 ### Commands
 
 **List buckets:**
 ```bash
-ss3 ls
-ss3 ls --format json
+ss3 --profile e2 https://key:secret@s3.example.com ls e2:
+ss3 --profile e2 https://s3.example.com ls e2: --format json
 ```
 
 **List objects in bucket:**
 ```bash
-ss3 ls s3://bucket/prefix
-ss3 ls s3://bucket/ --format tsv
+ss3 --profile e2 https://s3.example.com ls e2:mybucket/prefix
 ```
 
 **Copy local file to S3:**
 ```bash
-ss3 cp /local/file s3://bucket/key
+ss3 --profile e2 https://s3.example.com cp ./file.txt e2:mybucket/dir/
 ```
 
 **Download from S3:**
 ```bash
-ss3 cp s3://bucket/key /local/file
+SS3_E2_ACCESS_KEY=xxx SS3_E2_SECRET_KEY=yyy \
+ss3 --profile e2 https://s3.example.com cp e2:mybucket/file.txt ./local.txt
 ```
 
 ## Testing

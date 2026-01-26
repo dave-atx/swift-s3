@@ -58,7 +58,7 @@ struct ListTests {
         _ = try await client.putObject(bucket: bucket, key: "file1.txt", data: Data("content1".utf8))
         _ = try await client.putObject(bucket: bucket, key: "file2.txt", data: Data("content2".utf8))
 
-        let result = try await CLIRunner.run("ls", "s3://\(bucket)/")
+        let result = try await CLIRunner.run("ls", "minio:\(bucket)/")
 
         #expect(result.succeeded)
         #expect(result.stdout.contains("file1.txt"))
@@ -76,7 +76,7 @@ struct ListTests {
         _ = try await client.putObject(bucket: bucket, key: "docs/guide.txt", data: Data("guide".utf8))
         _ = try await client.putObject(bucket: bucket, key: "images/logo.png", data: Data("logo".utf8))
 
-        let result = try await CLIRunner.run("ls", "s3://\(bucket)/docs/")
+        let result = try await CLIRunner.run("ls", "minio:\(bucket)/docs/")
 
         #expect(result.succeeded)
         #expect(result.stdout.contains("readme.txt"))
@@ -94,7 +94,7 @@ struct ListTests {
         _ = try await client.putObject(bucket: bucket, key: "folder1/file.txt", data: Data("f1".utf8))
         _ = try await client.putObject(bucket: bucket, key: "folder2/file.txt", data: Data("f2".utf8))
 
-        let result = try await CLIRunner.run("ls", "s3://\(bucket)/")
+        let result = try await CLIRunner.run("ls", "minio:\(bucket)/")
 
         #expect(result.succeeded)
         #expect(result.stdout.contains("folder1/"))
@@ -109,7 +109,7 @@ struct ListTests {
 
         _ = try await client.putObject(bucket: bucket, key: "test.txt", data: Data("test".utf8))
 
-        let result = try await CLIRunner.run("ls", "s3://\(bucket)/", "--format", "json")
+        let result = try await CLIRunner.run("ls", "minio:\(bucket)/", "--format", "json")
 
         #expect(result.succeeded)
         #expect(result.stdout.contains("test.txt"))
@@ -117,7 +117,7 @@ struct ListTests {
     }
 
     @Test func listNonexistentBucketFails() async throws {
-        let result = try await CLIRunner.run("ls", "s3://nonexistent-bucket-xyz123/")
+        let result = try await CLIRunner.run("ls", "minio:nonexistent-bucket-xyz123/")
 
         #expect(!result.succeeded)
         #expect(result.exitCode == 1)

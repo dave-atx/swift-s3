@@ -23,7 +23,7 @@ struct CopyTests {
         defer { try? FileManager.default.removeItem(at: tempFile) }
 
         // Upload via CLI
-        let result = try await CLIRunner.run("cp", tempFile.path, "s3://\(bucket)/uploaded.txt")
+        let result = try await CLIRunner.run("cp", tempFile.path, "minio:\(bucket)/uploaded.txt")
 
         #expect(result.succeeded)
 
@@ -49,7 +49,7 @@ struct CopyTests {
         let fileName = (tempFile.path as NSString).lastPathComponent
 
         // Upload with trailing slash - should use filename
-        let result = try await CLIRunner.run("cp", tempFile.path, "s3://\(bucket)/prefix/")
+        let result = try await CLIRunner.run("cp", tempFile.path, "minio:\(bucket)/prefix/")
 
         #expect(result.succeeded)
 
@@ -74,7 +74,7 @@ struct CopyTests {
             .appendingPathComponent("downloaded-\(UUID().uuidString).txt")
         defer { try? FileManager.default.removeItem(at: tempFile) }
 
-        let result = try await CLIRunner.run("cp", "s3://\(bucket)/download-me.txt", tempFile.path)
+        let result = try await CLIRunner.run("cp", "minio:\(bucket)/download-me.txt", tempFile.path)
 
         #expect(result.succeeded)
 
@@ -102,7 +102,7 @@ struct CopyTests {
         defer { try? FileManager.default.removeItem(at: tempDir) }
 
         // Download to directory
-        let result = try await CLIRunner.run("cp", "s3://\(bucket)/\(key)", tempDir.path)
+        let result = try await CLIRunner.run("cp", "minio:\(bucket)/\(key)", tempDir.path)
 
         #expect(result.succeeded)
 
@@ -121,7 +121,7 @@ struct CopyTests {
         try await client.createBucket(bucket)
         defer { Task { await cleanupBucketViaCLI(bucket) } }
 
-        let result = try await CLIRunner.run("cp", "/nonexistent/file-\(UUID().uuidString).txt", "s3://\(bucket)/key")
+        let result = try await CLIRunner.run("cp", "/nonexistent/file-\(UUID().uuidString).txt", "minio:\(bucket)/key")
 
         #expect(!result.succeeded)
         #expect(result.exitCode == 1)
@@ -138,7 +138,7 @@ struct CopyTests {
             .appendingPathComponent("should-not-exist-\(UUID().uuidString).txt")
         defer { try? FileManager.default.removeItem(at: tempFile) }
 
-        let result = try await CLIRunner.run("cp", "s3://\(bucket)/nonexistent-key.txt", tempFile.path)
+        let result = try await CLIRunner.run("cp", "minio:\(bucket)/nonexistent-key.txt", tempFile.path)
 
         #expect(!result.succeeded)
         #expect(result.exitCode == 1)
@@ -197,7 +197,7 @@ struct CopyTests {
             "--multipart-threshold", "10000000",  // 10MB threshold
             "--chunk-size", "6000000",            // 6MB chunks (>5MB minimum)
             tempFile.path,
-            "s3://\(bucket)/large-file.bin"
+            "minio:\(bucket)/large-file.bin"
         )
 
         #expect(result.succeeded)
@@ -235,7 +235,7 @@ struct CopyTests {
             "--chunk-size", "5242880",            // 5MB chunks (exactly 5MB minimum)
             "--parallel", "2",                    // 2 parallel uploads
             tempFile.path,
-            "s3://\(bucket)/parallel-file.bin"
+            "minio:\(bucket)/parallel-file.bin"
         )
 
         #expect(result.succeeded)
@@ -262,7 +262,7 @@ struct CopyTests {
         let result = try await CLIRunner.run(
             "cp",
             tempFile.path,
-            "s3://\(bucket)/deep/nested/path/file.txt"
+            "minio:\(bucket)/deep/nested/path/file.txt"
         )
 
         #expect(result.succeeded)
@@ -292,7 +292,7 @@ struct CopyTests {
         defer { try? FileManager.default.removeItem(at: tempFile) }
 
         // Download
-        let result = try await CLIRunner.run("cp", "s3://\(bucket)/\(key)", tempFile.path)
+        let result = try await CLIRunner.run("cp", "minio:\(bucket)/\(key)", tempFile.path)
 
         #expect(result.succeeded)
 
