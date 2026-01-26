@@ -52,3 +52,19 @@ import Foundation
         #expect(description.contains("r2"))
     }
 }
+
+@Test func profileResolverWithNilConfigRequiresCLIOverride() throws {
+    let resolver = ProfileResolver(config: nil)
+
+    // Should fail without CLI override
+    #expect(throws: ProfileResolverError.self) {
+        try resolver.resolve(profileName: "e2", cliOverride: nil)
+    }
+
+    // Should succeed with CLI override
+    let profile = try resolver.resolve(
+        profileName: "e2",
+        cliOverride: (name: "e2", url: "https://s3.example.com")
+    )
+    #expect(profile.name == "e2")
+}
