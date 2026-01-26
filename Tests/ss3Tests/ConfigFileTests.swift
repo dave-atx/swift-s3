@@ -66,3 +66,27 @@ import Foundation
         try ConfigFile.load(from: tempFile.path)
     }
 }
+
+@Test func configFileDefaultPathUsesXDGConfigHome() {
+    let env = Environment(getenv: { key in
+        if key == "XDG_CONFIG_HOME" { return "/custom/config" }
+        return nil
+    })
+    let path = ConfigFile.defaultPath(env: env)
+    #expect(path == "/custom/config/ss3/profiles.json")
+}
+
+@Test func configFileDefaultPathFallsBackToHomeConfig() {
+    let env = Environment(getenv: { key in
+        if key == "HOME" { return "/home/testuser" }
+        return nil
+    })
+    let path = ConfigFile.defaultPath(env: env)
+    #expect(path == "/home/testuser/.config/ss3/profiles.json")
+}
+
+@Test func configFileDefaultPathReturnsNilWithoutHome() {
+    let env = Environment(getenv: { _ in nil })
+    let path = ConfigFile.defaultPath(env: env)
+    #expect(path == nil)
+}

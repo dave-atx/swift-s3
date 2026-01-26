@@ -43,6 +43,23 @@ struct ConfigFile: Sendable {
         }
     }
 
+    static func defaultPath(env: Environment = Environment()) -> String? {
+        if let xdgConfig = env.value(for: "XDG_CONFIG_HOME") {
+            return "\(xdgConfig)/ss3/profiles.json"
+        }
+        if let home = env.value(for: "HOME") {
+            return "\(home)/.config/ss3/profiles.json"
+        }
+        return nil
+    }
+
+    static func loadDefault(env: Environment = Environment()) throws -> ConfigFile? {
+        guard let path = defaultPath(env: env) else {
+            return nil
+        }
+        return try load(from: path)
+    }
+
     func profileURL(for name: String) -> String? {
         profiles[name]
     }
