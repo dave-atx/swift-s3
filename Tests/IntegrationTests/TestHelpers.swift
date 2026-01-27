@@ -49,3 +49,21 @@ func randomData(size: Int) -> Data {
     }
     return data
 }
+
+/// Runs a test with a bucket, ensuring cleanup is awaited before returning.
+/// This prevents race conditions from fire-and-forget cleanup tasks.
+func withTestBucket(
+    prefix: String,
+    test: (S3Client, String) async throws -> Void
+) async throws {
+    let client = TestConfig.createClient()
+    let bucket = TestConfig.uniqueBucketName(prefix: prefix)
+    try await client.createBucket(bucket)
+    do {
+        try await test(client, bucket)
+        await cleanupBucket(client, bucket)
+    } catch {
+        await cleanupBucket(client, bucket)
+        throw error
+    }
+}

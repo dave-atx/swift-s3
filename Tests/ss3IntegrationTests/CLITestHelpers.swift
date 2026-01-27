@@ -25,7 +25,7 @@ enum CLITestConfig {
 }
 
 /// Cleans up a bucket via the library (not CLI) for reliability.
-func cleanupBucketViaCLI(_ bucketName: String) async {
+func cleanupBucket(_ bucketName: String) async {
     let client = CLITestConfig.createClient()
     do {
         let result = try await client.listObjects(bucket: bucketName)
@@ -35,5 +35,23 @@ func cleanupBucketViaCLI(_ bucketName: String) async {
         try await client.deleteBucket(bucketName)
     } catch {
         // Ignore cleanup errors
+    }
+}
+
+/// Runs a test with a bucket, ensuring cleanup is awaited before returning.
+/// This prevents race conditions from fire-and-forget cleanup tasks.
+func withTestBucket(
+    prefix: String,
+    test: (S3Client, String) async throws -> Void
+) async throws {
+    let client = CLITestConfig.createClient()
+    let bucket = CLITestConfig.uniqueBucketName(prefix: prefix)
+    try await client.createBucket(bucket)
+    do {
+        try await test(client, bucket)
+        await cleanupBucket(bucket)
+    } catch {
+        await cleanupBucket(bucket)
+        throw error
     }
 }
