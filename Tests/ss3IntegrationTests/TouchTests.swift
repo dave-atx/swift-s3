@@ -19,7 +19,7 @@ struct TouchTests {
 
             // Verify file exists and is empty
             let (data, metadata) = try await client.getObject(bucket: bucket, key: "newfile.txt")
-            #expect(data.count == 0)
+            #expect(data.isEmpty)
             #expect(metadata.contentLength == 0)
         }
     }
@@ -76,7 +76,7 @@ struct TouchTests {
 
             // Verify file exists
             let (data, _) = try await client.getObject(bucket: bucket, key: "deep/nested/path/file.txt")
-            #expect(data.count == 0)
+            #expect(data.isEmpty)
         }
     }
 }
