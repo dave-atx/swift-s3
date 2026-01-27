@@ -16,37 +16,43 @@ struct MoveCommand: AsyncParsableCommand {
     @Argument(help: "Destination remote path (profile:bucket/key)")
     var destination: String
 
+    private struct ParsedPath {
+        let profile: String
+        let bucket: String
+        let key: String
+    }
+
     func run() async throws {
         let env = Environment()
         let formatter = options.format.createFormatter()
         let config = try ConfigFile.loadDefault(env: env)
 
-        let (srcProfile, srcBucket, srcKey) = try validateSource()
-        let (dstProfile, dstBucket, dstKey) = try validateDestination()
+        let src = try validateSource()
+        let dst = try validateDestination()
 
-        guard srcProfile == dstProfile else {
+        guard src.profile == dst.profile else {
             throw ValidationError("Source and destination must use the same profile")
         }
 
-        let client = try createClient(profileName: srcProfile, config: config, env: env)
+        let client = try createClient(profileName: src.profile, config: config, env: env)
 
         do {
             _ = try await client.copyObject(
-                sourceBucket: srcBucket,
-                sourceKey: srcKey,
-                destinationBucket: dstBucket,
-                destinationKey: dstKey
+                sourceBucket: src.bucket,
+                sourceKey: src.key,
+                destinationBucket: dst.bucket,
+                destinationKey: dst.key
             )
-            try await client.deleteObject(bucket: srcBucket, key: srcKey)
+            try await client.deleteObject(bucket: src.bucket, key: src.key)
 
-            print(formatter.formatSuccess("Moved \(srcBucket)/\(srcKey) to \(dstBucket)/\(dstKey)"))
+            print(formatter.formatSuccess("Moved \(src.bucket)/\(src.key) to \(dst.bucket)/\(dst.key)"))
         } catch {
             printError(formatter.formatError(error, verbose: options.verbose))
             throw ExitCode(1)
         }
     }
 
-    private func validateSource() throws -> (profile: String, bucket: String, key: String) {
+    private func validateSource() throws -> ParsedPath {
         let parsed = S3Path.parse(source)
         guard case .remote(let profile, let bucketOpt, let keyOpt) = parsed else {
             throw ValidationError("Source must be remote: profile:bucket/key")
@@ -60,10 +66,10 @@ struct MoveCommand: AsyncParsableCommand {
         guard !key.hasSuffix("/") else {
             throw ValidationError("Cannot move directories. Source must not end with /")
         }
-        return (profile, bucket, key)
+        return ParsedPath(profile: profile, bucket: bucket, key: key)
     }
 
-    private func validateDestination() throws -> (profile: String, bucket: String, key: String) {
+    private func validateDestination() throws -> ParsedPath {
         let parsed = S3Path.parse(destination)
         guard case .remote(let profile, let bucketOpt, let keyOpt) = parsed else {
             throw ValidationError("Destination must be remote: profile:bucket/key")
@@ -77,7 +83,7 @@ struct MoveCommand: AsyncParsableCommand {
         guard !key.hasSuffix("/") else {
             throw ValidationError("Cannot move to directory. Destination must not end with /")
         }
-        return (profile, bucket, key)
+        return ParsedPath(profile: profile, bucket: bucket, key: key)
     }
 
     private func createClient(profileName: String, config: ConfigFile?, env: Environment) throws -> S3Client {
