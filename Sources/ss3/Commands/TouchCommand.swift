@@ -2,6 +2,12 @@ import ArgumentParser
 import Foundation
 import SwiftS3
 
+// Custom error for touch command that preserves message
+struct TouchError: Error, CustomStringConvertible {
+    let message: String
+    var description: String { message }
+}
+
 struct TouchCommand: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "touch",
@@ -47,14 +53,27 @@ struct TouchCommand: AsyncParsableCommand {
             do {
                 _ = try await client.headObject(bucket: bucket, key: key)
                 // File exists - error
-                throw ValidationError("File already exists: \(bucket)/\(key)")
+                throw TouchError(message: "File already exists: \(bucket)/\(key)")
             } catch let error as S3APIError where error.code == .noSuchKey {
                 // File doesn't exist - good, proceed
+            } catch let error as S3ParsingError {
+                // For HEAD requests on nonexistent keys, minio may return a 404 without XML body
+                // Treat this as "file doesn't exist" and proceed
+                // Only proceed if the response body is empty or minimal
+                if error.responseBody?.isEmpty ?? true {
+                    // Likely a 404 with no body - file doesn't exist
+                } else {
+                    // Real parsing error - rethrow
+                    throw error
+                }
             }
 
             // Create empty file
             _ = try await client.putObject(bucket: bucket, key: key, data: Data())
             print(formatter.formatSuccess("Created \(bucket)/\(key)"))
+        } catch let error as TouchError {
+            printError("Error: \(error.message)")
+            throw ExitCode(1)
         } catch let error as ValidationError {
             printError(formatter.formatError(error, verbose: options.verbose))
             throw ExitCode(1)
