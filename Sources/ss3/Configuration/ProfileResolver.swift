@@ -23,10 +23,6 @@ enum ProfileResolverError: Error, CustomStringConvertible {
 struct ProfileResolver: Sendable {
     let config: ConfigFile?
 
-    init(config: ConfigFile?) {
-        self.config = config
-    }
-
     func resolve(
         profileName: String,
         cliOverride: (name: String, url: String)?
