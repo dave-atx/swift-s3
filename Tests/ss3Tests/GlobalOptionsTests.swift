@@ -38,3 +38,31 @@ import ArgumentParser
     let options = try GlobalOptions.parse(["--profile", "e2", "https://s3.example.com", "--verbose"])
     #expect(options.verbose == true)
 }
+
+@Test func globalOptionsParseProfileOverrideWithBothArgs() throws {
+    var options = GlobalOptions()
+    options.profileArgs = ["e2", "https://s3.example.com"]
+
+    let override = options.parseProfileOverride()
+
+    #expect(override?.name == "e2")
+    #expect(override?.url == "https://s3.example.com")
+}
+
+@Test func globalOptionsParseProfileOverrideReturnsNilWhenEmpty() throws {
+    var options = GlobalOptions()
+    options.profileArgs = []
+
+    let override = options.parseProfileOverride()
+
+    #expect(override == nil)
+}
+
+@Test func globalOptionsRequireProfileOverrideThrowsWithOneArg() throws {
+    var options = GlobalOptions()
+    options.profileArgs = ["e2"]
+
+    #expect(throws: ValidationError.self) {
+        _ = try options.requireProfileOverride()
+    }
+}

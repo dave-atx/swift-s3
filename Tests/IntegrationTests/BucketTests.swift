@@ -36,15 +36,21 @@ struct BucketTests {
 
         // Create two buckets
         try await client.createBucket(bucket1)
-        defer { Task { await cleanupBucket(client, bucket1) } }
-
         try await client.createBucket(bucket2)
-        defer { Task { await cleanupBucket(client, bucket2) } }
 
-        // List and verify both exist
-        let result = try await client.listBuckets()
-        #expect(result.buckets.contains { $0.name == bucket1 })
-        #expect(result.buckets.contains { $0.name == bucket2 })
+        do {
+            // List and verify both exist
+            let result = try await client.listBuckets()
+            #expect(result.buckets.contains { $0.name == bucket1 })
+            #expect(result.buckets.contains { $0.name == bucket2 })
+        } catch {
+            await cleanupBucket(client, bucket1)
+            await cleanupBucket(client, bucket2)
+            throw error
+        }
+
+        await cleanupBucket(client, bucket1)
+        await cleanupBucket(client, bucket2)
     }
 
     @Test
@@ -60,15 +66,11 @@ struct BucketTests {
 
     @Test
     func createDuplicateBucket() async throws {
-        let client = TestConfig.createClient()
-        let bucketName = TestConfig.uniqueBucketName(prefix: "dup")
-
-        try await client.createBucket(bucketName)
-        defer { Task { await cleanupBucket(client, bucketName) } }
-
-        // Creating same bucket again should throw
-        await #expect(throws: (any Error).self) {
-            try await client.createBucket(bucketName)
+        try await withTestBucket(prefix: "dup") { client, bucket in
+            // Creating same bucket again should throw
+            await #expect(throws: (any Error).self) {
+                try await client.createBucket(bucket)
+            }
         }
     }
 }

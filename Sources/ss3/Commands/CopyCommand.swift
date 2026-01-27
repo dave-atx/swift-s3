@@ -26,10 +26,11 @@ struct CopyCommand: AsyncParsableCommand {
     var parallel: Int = 4
 
     func run() async throws {
-        let profile = try options.parseProfile()
         let env = Environment()
-        let resolved = try profile.resolve(with: env, pathStyle: options.pathStyle)
         let formatter = options.format.createFormatter()
+
+        // Load config file (nil if not found)
+        let config = try ConfigFile.loadDefault(env: env)
 
         let sourcePath = S3Path.parse(source)
         let destPath = S3Path.parse(destination)
@@ -38,13 +39,26 @@ struct CopyCommand: AsyncParsableCommand {
             throw ValidationError("Must specify exactly one local and one remote path")
         }
 
-        // Validate remote path uses correct profile
-        if let remoteProfile = sourcePath.profile ?? destPath.profile {
-            guard remoteProfile == profile.name else {
-                throw ValidationError("Path profile '\(remoteProfile)' doesn't match --profile '\(profile.name)'")
-            }
+        // Extract profile name from the remote path
+        guard let profileName = sourcePath.profile ?? destPath.profile else {
+            throw ValidationError("Remote path must include profile: profile:bucket/key")
         }
 
+        // Resolve profile (CLI override or config lookup)
+        let resolver = ProfileResolver(config: config)
+        let profile = try resolver.resolve(
+            profileName: profileName,
+            cliOverride: options.parseProfileOverride()
+        )
+
+        // Validate path profile matches if --profile was specified
+        if let override = options.parseProfileOverride(), override.name != profileName {
+            throw ValidationError(
+                "Path profile '\(profileName)' doesn't match --profile '\(override.name)'"
+            )
+        }
+
+        let resolved = try profile.resolve(with: env, pathStyle: options.pathStyle)
         let client = ClientFactory.createClient(from: resolved)
 
         do {

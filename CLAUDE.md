@@ -132,6 +132,29 @@ ss3 --profile <name> <url> COMMAND [OPTIONS]
 
 **Output formats:** human (default), json, tsv
 
+### Config File
+
+ss3 supports a config file at `$XDG_CONFIG_HOME/ss3/profiles.json` (defaults to `~/.config/ss3/profiles.json`):
+
+```json
+{
+  "e2": "https://key:secret@bucket.s3.us-west-001.example.com",
+  "r2": "https://account.r2.cloudflarestorage.com"
+}
+```
+
+With a config file, you can use profiles directly without `--profile`:
+
+```bash
+ss3 ls e2:mybucket              # Uses profile from config
+ss3 cp ./file.txt e2:mybucket/  # Uses profile from config
+```
+
+**Precedence (highest to lowest):**
+1. `--profile name url` flag overrides config
+2. Config file profile lookup
+3. Environment variables for credentials override URL credentials
+
 ### Path Format
 
 Paths use `profile:bucket/key` format:

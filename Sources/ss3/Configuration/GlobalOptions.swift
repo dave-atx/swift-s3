@@ -19,4 +19,22 @@ struct GlobalOptions: ParsableArguments {
         }
         return try Profile.parse(name: profileArgs[0], url: profileArgs[1])
     }
+
+    /// Returns CLI profile override if provided (both name and URL).
+    /// Returns nil if no --profile flag was used.
+    func parseProfileOverride() -> (name: String, url: String)? {
+        guard profileArgs.count >= 2 else {
+            return nil
+        }
+        return (name: profileArgs[0], url: profileArgs[1])
+    }
+
+    /// Requires --profile to be specified with both name and URL.
+    /// Use this when no config file exists.
+    func requireProfileOverride() throws -> (name: String, url: String) {
+        guard profileArgs.count >= 2 else {
+            throw ValidationError("--profile requires two arguments: <name> <url>")
+        }
+        return (name: profileArgs[0], url: profileArgs[1])
+    }
 }
