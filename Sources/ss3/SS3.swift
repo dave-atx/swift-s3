@@ -6,7 +6,7 @@ struct SS3: AsyncParsableCommand {
         commandName: "ss3",
         abstract: "A CLI for S3-compatible storage services",
         version: "0.1.0",
-        subcommands: [ListCommand.self, CopyCommand.self],
+        subcommands: [ListCommand.self, CopyCommand.self, RemoveCommand.self],
         defaultSubcommand: nil
     )
 }
