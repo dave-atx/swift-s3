@@ -15,7 +15,7 @@ struct RemoveCommand: AsyncParsableCommand {
 
     func run() async throws {
         let env = Environment()
-        let formatter = options.format.createFormatter()
+        let formatter = HumanFormatter()
         let config = try ConfigFile.loadDefault(env: env)
 
         // Parse and validate path

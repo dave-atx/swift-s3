@@ -24,7 +24,7 @@ struct MoveCommand: AsyncParsableCommand {
 
     func run() async throws {
         let env = Environment()
-        let formatter = options.format.createFormatter()
+        let formatter = HumanFormatter()
         let config = try ConfigFile.loadDefault(env: env)
 
         let src = try validateSource()

@@ -27,7 +27,7 @@ struct CopyCommand: AsyncParsableCommand {
 
     func run() async throws {
         let env = Environment()
-        let formatter = options.format.createFormatter()
+        let formatter = HumanFormatter()
 
         // Load config file (nil if not found)
         let config = try ConfigFile.loadDefault(env: env)

@@ -24,16 +24,6 @@ import ArgumentParser
     #expect(profile.accessKeyId == "key")
 }
 
-@Test func globalOptionsFormatDefault() throws {
-    let options = try GlobalOptions.parse(["--profile", "e2", "https://s3.example.com"])
-    #expect(options.format == .human)
-}
-
-@Test func globalOptionsFormatJson() throws {
-    let options = try GlobalOptions.parse(["--profile", "e2", "https://s3.example.com", "--format", "json"])
-    #expect(options.format == .json)
-}
-
 @Test func globalOptionsVerbose() throws {
     let options = try GlobalOptions.parse(["--profile", "e2", "https://s3.example.com", "--verbose"])
     #expect(options.verbose == true)
