@@ -112,6 +112,25 @@ struct HumanFormatter: OutputFormatter {
         }
     }
 
+    func formatLsDate(_ date: Date) -> String {
+        let now = Date()
+        let sixMonthsAgo = now.addingTimeInterval(-182 * 24 * 60 * 60)
+
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone.current
+
+        if date >= sixMonthsAgo {
+            // Recent: "Jan 28 14:30"
+            formatter.dateFormat = "MMM dd HH:mm"
+        } else {
+            // Old: "Jan 28  2024" (two spaces before year)
+            formatter.dateFormat = "MMM dd  yyyy"
+        }
+
+        return formatter.string(from: date)
+    }
+
     private func formatDate(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd HH:mm"

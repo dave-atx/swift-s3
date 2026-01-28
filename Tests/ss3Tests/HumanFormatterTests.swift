@@ -86,3 +86,40 @@ import SwiftS3
     #expect(formatter.formatCompactSize(1073741824) == " 1.0G")
     #expect(formatter.formatCompactSize(1099511627776) == " 1.0T")
 }
+
+@Test func lsDateFormatsRecentDates() {
+    let formatter = HumanFormatter()
+    let calendar = Calendar.current
+    let now = Date()
+    let oneMonthAgo = calendar.date(byAdding: .month, value: -1, to: now)!
+
+    let formatted = formatter.formatLsDate(oneMonthAgo)
+
+    #expect(formatted.count == 12)
+    #expect(formatted.contains(":"))
+}
+
+@Test func lsDateFormatsOldDates() {
+    let formatter = HumanFormatter()
+    let calendar = Calendar.current
+    let now = Date()
+    let eightMonthsAgo = calendar.date(byAdding: .month, value: -8, to: now)!
+
+    let formatted = formatter.formatLsDate(eightMonthsAgo)
+
+    #expect(formatted.count == 12)
+    #expect(!formatted.contains(":"))
+    #expect(formatted.contains("202"))  // Has year
+}
+
+@Test func lsDateEdgeCaseExactlySixMonths() {
+    let formatter = HumanFormatter()
+    let now = Date()
+    let sixMonthsAgo = now.addingTimeInterval(-182 * 24 * 60 * 60)
+
+    let formatted = formatter.formatLsDate(sixMonthsAgo)
+
+    #expect(formatted.count == 12)
+    #expect(!formatted.contains(":"))
+    #expect(formatted.contains("202"))  // Has year
+}
