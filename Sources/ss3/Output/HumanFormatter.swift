@@ -87,6 +87,31 @@ struct HumanFormatter: OutputFormatter {
         return String(format: "%.1f %@", value, units[unitIndex])
     }
 
+    func formatCompactSize(_ bytes: Int64) -> String {
+        let units = ["B", "K", "M", "G", "T"]
+        var value = Double(bytes)
+        var unitIndex = 0
+
+        while value >= 1024 && unitIndex < units.count - 1 {
+            value /= 1024
+            unitIndex += 1
+        }
+
+        let unit = units[unitIndex]
+
+        // For bytes (unitIndex == 0), format as integer right-aligned to 5 chars
+        if unitIndex == 0 {
+            return String(format: "%4d%@", Int(value), unit)
+        }
+
+        // For K and above: use decimal if < 100, no decimal if >= 100
+        if value < 100 {
+            return String(format: "%4.1f%@", value, unit)
+        } else {
+            return String(format: "%4.0f%@", value, unit)
+        }
+    }
+
     private func formatDate(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd HH:mm"

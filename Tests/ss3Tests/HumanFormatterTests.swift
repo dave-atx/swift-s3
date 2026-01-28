@@ -55,3 +55,34 @@ import SwiftS3
     #expect(formatter.formatSize(1048576) == "1.0 MB")
     #expect(formatter.formatSize(1073741824) == "1.0 GB")
 }
+
+@Test func compactSizeFormatsBytes() {
+    let formatter = HumanFormatter()
+
+    #expect(formatter.formatCompactSize(0) == "   0B")
+    #expect(formatter.formatCompactSize(1) == "   1B")
+    #expect(formatter.formatCompactSize(999) == " 999B")
+}
+
+@Test func compactSizeFormatsKilobytes() {
+    let formatter = HumanFormatter()
+
+    #expect(formatter.formatCompactSize(1024) == " 1.0K")
+    #expect(formatter.formatCompactSize(1536) == " 1.5K")
+    #expect(formatter.formatCompactSize(10240) == "10.0K")
+    #expect(formatter.formatCompactSize(102400) == " 100K")
+}
+
+@Test func compactSizeFormatsMegabytes() {
+    let formatter = HumanFormatter()
+
+    #expect(formatter.formatCompactSize(1048576) == " 1.0M")
+    #expect(formatter.formatCompactSize(104857600) == " 100M")
+}
+
+@Test func compactSizeFormatsLargeValues() {
+    let formatter = HumanFormatter()
+
+    #expect(formatter.formatCompactSize(1073741824) == " 1.0G")
+    #expect(formatter.formatCompactSize(1099511627776) == " 1.0T")
+}
