@@ -70,7 +70,7 @@ struct TouchCommand: AsyncParsableCommand {
 
             // Create empty file
             _ = try await client.putObject(bucket: bucket, key: key, data: Data())
-            print(formatter.formatSuccess("Created \(bucket)/\(key)"))
+            print("Created \(bucket)/\(key)")
         } catch let error as TouchError {
             printError("Error: \(error.message)")
             throw ExitCode(1)
