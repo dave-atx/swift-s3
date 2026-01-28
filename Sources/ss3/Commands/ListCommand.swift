@@ -10,12 +10,22 @@ struct ListCommand: AsyncParsableCommand {
 
     @OptionGroup var options: GlobalOptions
 
+    @Flag(name: .shortAndLong, help: "Long format (size, date, name)")
+    var long: Bool = false
+
+    @Flag(name: .short, help: "Long format (synonym for -l)")
+    var human: Bool = false
+
+    @Flag(name: .shortAndLong, help: "Sort by modification time, most recent first")
+    var time: Bool = false
+
     @Argument(help: "Path to list (profile: or profile:bucket/prefix)")
     var path: String?
 
     func run() async throws {
         let env = Environment()
-        let formatter = options.format.createFormatter()
+        let longFormat = long || human
+        let formatter = ListFormatter(longFormat: longFormat, sortByTime: time)
         let config = try ConfigFile.loadDefault(env: env)
 
         let pathComponents = try extractPathComponents(config: config)
@@ -74,16 +84,19 @@ struct ListCommand: AsyncParsableCommand {
         return PathComponents(profileName: override.name, bucket: nil, prefix: nil)
     }
 
-    private func listBuckets(client: S3Client, formatter: any OutputFormatter) async throws {
+    private func listBuckets(client: S3Client, formatter: ListFormatter) async throws {
         let result = try await client.listBuckets()
-        print(formatter.formatBuckets(result.buckets))
+        let output = formatter.formatBuckets(result.buckets)
+        if !output.isEmpty {
+            print(output)
+        }
     }
 
     private func listObjects(
         client: S3Client,
         bucket: String,
         prefix: String?,
-        formatter: any OutputFormatter
+        formatter: ListFormatter
     ) async throws {
         var allObjects: [S3Object] = []
         var allPrefixes: [String] = []
@@ -102,7 +115,10 @@ struct ListCommand: AsyncParsableCommand {
             continuationToken = result.isTruncated ? result.continuationToken : nil
         } while continuationToken != nil
 
-        print(formatter.formatObjects(allObjects, prefixes: allPrefixes))
+        let output = formatter.formatObjects(allObjects, prefixes: allPrefixes)
+        if !output.isEmpty {
+            print(output)
+        }
     }
 }
 
