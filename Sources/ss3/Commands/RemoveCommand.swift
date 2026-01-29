@@ -15,7 +15,7 @@ struct RemoveCommand: AsyncParsableCommand {
 
     func run() async throws {
         let env = Environment()
-        let formatter = options.format.createFormatter()
+        let formatter = HumanFormatter()
         let config = try ConfigFile.loadDefault(env: env)
 
         // Parse and validate path
@@ -44,7 +44,7 @@ struct RemoveCommand: AsyncParsableCommand {
 
         do {
             try await client.deleteObject(bucket: bucket, key: key)
-            print(formatter.formatSuccess("Deleted \(bucket)/\(key)"))
+            print("Deleted \(bucket)/\(key)")
         } catch {
             printError(formatter.formatError(error, verbose: options.verbose))
             throw ExitCode(1)

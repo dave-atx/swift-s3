@@ -27,7 +27,7 @@ struct CopyCommand: AsyncParsableCommand {
 
     func run() async throws {
         let env = Environment()
-        let formatter = options.format.createFormatter()
+        let formatter = HumanFormatter()
 
         // Load config file (nil if not found)
         let config = try ConfigFile.loadDefault(env: env)
@@ -89,7 +89,7 @@ struct CopyCommand: AsyncParsableCommand {
         localPath: S3Path,
         remotePath: S3Path,
         resolvedProfile: ResolvedProfile,
-        formatter: any OutputFormatter
+        formatter: HumanFormatter
     ) async throws {
         guard case .local(let filePath) = localPath else {
             throw ValidationError("Expected local source path")
@@ -125,14 +125,14 @@ struct CopyCommand: AsyncParsableCommand {
             _ = try await client.putObject(bucket: bucket, key: key, data: data)
         }
 
-        print(formatter.formatSuccess("Uploaded \(fileName) to \(bucket)/\(key)"))
+        print("Uploaded \(fileName) to \(bucket)/\(key)")
     }
 
     private func download(
         client: S3Client,
         remotePath: S3Path,
         localPath: S3Path,
-        formatter: any OutputFormatter
+        formatter: HumanFormatter
     ) async throws {
         guard case .remote(_, let bucketOrNil, let keyOrNil) = remotePath else {
             throw ValidationError("Expected remote source path")
@@ -154,7 +154,7 @@ struct CopyCommand: AsyncParsableCommand {
         }
 
         _ = try await client.downloadObject(bucket: bucket, key: key, to: destinationURL)
-        print(formatter.formatSuccess("Downloaded \(bucket)/\(key) to \(destinationURL.path)"))
+        print("Downloaded \(bucket)/\(key) to \(destinationURL.path)")
     }
 
     private func resolveUploadKey(

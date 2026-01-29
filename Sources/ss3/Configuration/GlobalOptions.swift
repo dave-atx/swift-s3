@@ -10,9 +10,6 @@ struct GlobalOptions: ParsableArguments {
     @Flag(help: "Verbose error output")
     var verbose: Bool = false
 
-    @Option(help: "Output format (human, json, tsv)")
-    var format: OutputFormat = .human
-
     func parseProfile() throws -> Profile {
         guard profileArgs.count >= 2 else {
             throw ValidationError("--profile requires two arguments: <name> <url>")

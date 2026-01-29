@@ -1,49 +1,49 @@
 import Foundation
 import SwiftS3
 
-struct HumanFormatter: OutputFormatter {
-    func formatBuckets(_ buckets: [Bucket]) -> String {
-        var lines: [String] = []
+struct HumanFormatter {
+    func formatCompactSize(_ bytes: Int64) -> String {
+        let units = ["B", "K", "M", "G", "T"]
+        var value = Double(bytes)
+        var unitIndex = 0
 
-        for bucket in buckets {
-            var line = bucket.name
-            if let date = bucket.creationDate {
-                line = "\(formatDate(date))  \(line)"
-            }
-            lines.append(line)
+        while value >= 1024 && unitIndex < units.count - 1 {
+            value /= 1024
+            unitIndex += 1
         }
 
-        let summary = "\(buckets.count) bucket\(buckets.count == 1 ? "" : "s")"
-        lines.append(summary)
+        let unit = units[unitIndex]
 
-        return lines.joined(separator: "\n")
+        // For bytes (unitIndex == 0), format as integer right-aligned to 5 chars
+        if unitIndex == 0 {
+            return String(format: "%4d%@", Int(value), unit)
+        }
+
+        // For K and above: use decimal if < 100, no decimal if >= 100
+        if value < 100 {
+            return String(format: "%4.1f%@", value, unit)
+        } else {
+            return String(format: "%4.0f%@", value, unit)
+        }
     }
 
-    func formatObjects(_ objects: [S3Object], prefixes: [String]) -> String {
-        var lines: [String] = []
-        var totalSize: Int64 = 0
+    func formatLsDate(_ date: Date) -> String {
+        let now = Date()
+        let sixMonthsAgo = now.addingTimeInterval(-182 * 24 * 60 * 60)
 
-        for prefix in prefixes.sorted() {
-            let line = String(repeating: " ", count: 10) + "  " + String(repeating: " ", count: 16) + "  " + prefix
-            lines.append(line)
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone.current
+
+        if date >= sixMonthsAgo {
+            // Recent: "Jan 28 14:30"
+            formatter.dateFormat = "MMM dd HH:mm"
+        } else {
+            // Old: "Jan 28  2024" (two spaces before year)
+            formatter.dateFormat = "MMM dd  yyyy"
         }
 
-        for object in objects.sorted(by: { $0.key < $1.key }) {
-            let sizeStr = object.size.map { formatSize($0) } ?? ""
-            let dateStr = object.lastModified.map { formatDate($0) } ?? ""
-            let paddedSize = sizeStr.padding(toLength: 10, withPad: " ", startingAt: 0)
-            let paddedDate = dateStr.padding(toLength: 16, withPad: " ", startingAt: 0)
-            let line = "\(paddedSize)  \(paddedDate)  \(object.key)"
-            lines.append(line)
-            totalSize += object.size ?? 0
-        }
-
-        let itemCount = objects.count + prefixes.count
-        let summary = "\(itemCount) item\(itemCount == 1 ? "" : "s")" +
-            (totalSize > 0 ? " (\(formatSize(totalSize)) total)" : "")
-        lines.append(summary)
-
-        return lines.joined(separator: "\n")
+        return formatter.string(from: date)
     }
 
     func formatError(_ error: any Error, verbose: Bool) -> String {
@@ -65,33 +65,6 @@ struct HumanFormatter: OutputFormatter {
         }
 
         return "Error: \(error.localizedDescription)"
-    }
-
-    func formatSuccess(_ message: String) -> String {
-        message
-    }
-
-    func formatSize(_ bytes: Int64) -> String {
-        let units = ["B", "KB", "MB", "GB", "TB"]
-        var value = Double(bytes)
-        var unitIndex = 0
-
-        while value >= 1024 && unitIndex < units.count - 1 {
-            value /= 1024
-            unitIndex += 1
-        }
-
-        if unitIndex == 0 {
-            return "\(Int(value)) \(units[unitIndex])"
-        }
-        return String(format: "%.1f %@", value, units[unitIndex])
-    }
-
-    private func formatDate(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd HH:mm"
-        formatter.timeZone = TimeZone.current
-        return formatter.string(from: date)
     }
 
     private func hintForError(_ code: S3APIError.Code) -> String {
