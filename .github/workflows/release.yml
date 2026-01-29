@@ -77,3 +77,40 @@ jobs:
         run: swift test --filter IntegrationTests --no-parallel
       - name: Run CLI Integration Tests
         run: swift test --filter ss3IntegrationTests --no-parallel
+
+  build-macos:
+    name: Build macOS
+    needs: [unit-tests-macos, unit-tests-linux, integration-tests-macos, integration-tests-linux]
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate version file
+        run: |
+          echo 'let ss3Version = "${{ github.ref_name }}"' > Sources/ss3/Version.generated.swift
+
+      - name: Build arm64
+        run: |
+          swift build -c release --arch arm64 \
+            -Xswiftc -DSS3_VERSION_INJECTED
+
+      - name: Build x86_64
+        run: |
+          swift build -c release --arch x86_64 \
+            -Xswiftc -DSS3_VERSION_INJECTED
+
+      - name: Package arm64
+        run: |
+          tar -czvf ss3-${{ github.ref_name }}-macos-arm64.tar.gz \
+            -C .build/arm64-apple-macosx/release ss3
+
+      - name: Package x86_64
+        run: |
+          tar -czvf ss3-${{ github.ref_name }}-macos-amd64.tar.gz \
+            -C .build/x86_64-apple-macosx/release ss3
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-binaries
+          path: ss3-*.tar.gz
