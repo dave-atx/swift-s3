@@ -106,10 +106,12 @@ struct ListTests {
             #expect(result.succeeded)
             let lines = result.stdout.split(separator: "\n").map(String.init)
             // Most recent first
-            let newerIndex = lines.firstIndex(of: "newer.txt")
-            let olderIndex = lines.firstIndex(of: "older.txt")
-            #expect(newerIndex != nil && olderIndex != nil)
-            #expect(newerIndex! < olderIndex!)
+            guard let newerIndex = lines.firstIndex(of: "newer.txt"),
+                  let olderIndex = lines.firstIndex(of: "older.txt") else {
+                Issue.record("Expected both newer.txt and older.txt in output")
+                return
+            }
+            #expect(newerIndex < olderIndex)
         }
     }
 

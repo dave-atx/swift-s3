@@ -38,7 +38,10 @@ import SwiftS3
     let formatter = HumanFormatter()
     let calendar = Calendar.current
     let now = Date()
-    let oneMonthAgo = calendar.date(byAdding: .month, value: -1, to: now)!
+    guard let oneMonthAgo = calendar.date(byAdding: .month, value: -1, to: now) else {
+        Issue.record("Failed to create date one month ago")
+        return
+    }
 
     let formatted = formatter.formatLsDate(oneMonthAgo)
 
@@ -50,7 +53,10 @@ import SwiftS3
     let formatter = HumanFormatter()
     let calendar = Calendar.current
     let now = Date()
-    let eightMonthsAgo = calendar.date(byAdding: .month, value: -8, to: now)!
+    guard let eightMonthsAgo = calendar.date(byAdding: .month, value: -8, to: now) else {
+        Issue.record("Failed to create date eight months ago")
+        return
+    }
 
     let formatted = formatter.formatLsDate(eightMonthsAgo)
 
@@ -62,7 +68,9 @@ import SwiftS3
 @Test func lsDateEdgeCaseExactlySixMonths() {
     let formatter = HumanFormatter()
     let now = Date()
-    let sixMonthsAgo = now.addingTimeInterval(-182 * 24 * 60 * 60)
+    // Use 183 days to be unambiguously past the 182-day boundary
+    // This avoids flakiness from timing differences between test and formatter
+    let sixMonthsAgo = now.addingTimeInterval(-183 * 24 * 60 * 60)
 
     let formatted = formatter.formatLsDate(sixMonthsAgo)
 
