@@ -1,0 +1,79 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  lint:
+    name: SwiftLint
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install SwiftLint
+        run: brew install swiftlint
+      - name: Run SwiftLint
+        run: swiftlint --strict
+
+  unit-tests-macos:
+    name: Unit Tests (macOS)
+    needs: lint
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        run: swift build
+      - name: Run SwiftS3 Tests
+        run: swift test --filter SwiftS3Tests
+      - name: Run ss3 Tests
+        run: swift test --filter ss3Tests
+
+  unit-tests-linux:
+    name: Unit Tests (Linux)
+    needs: lint
+    runs-on: ubuntu-24.04
+    container:
+      image: swift:6.2-noble
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        run: swift build
+      - name: Run SwiftS3 Tests
+        run: swift test --filter SwiftS3Tests
+      - name: Run ss3 Tests
+        run: swift test --filter ss3Tests
+
+  integration-tests-macos:
+    name: Integration Tests (macOS)
+    needs: lint
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup minio
+        run: ./Scripts/setup-minio.sh
+      - name: Build
+        run: swift build
+      - name: Run Library Integration Tests
+        run: swift test --filter IntegrationTests --no-parallel
+      - name: Run CLI Integration Tests
+        run: swift test --filter ss3IntegrationTests --no-parallel
+
+  integration-tests-linux:
+    name: Integration Tests (Linux)
+    needs: lint
+    runs-on: ubuntu-24.04
+    container:
+      image: swift:6.2-noble
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install curl
+        run: apt-get update && apt-get install -y curl
+      - name: Setup minio
+        run: ./Scripts/setup-minio.sh
+      - name: Build
+        run: swift build
+      - name: Run Library Integration Tests
+        run: swift test --filter IntegrationTests --no-parallel
+      - name: Run CLI Integration Tests
+        run: swift test --filter ss3IntegrationTests --no-parallel
