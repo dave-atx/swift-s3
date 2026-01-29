@@ -114,3 +114,46 @@ jobs:
         with:
           name: macos-binaries
           path: ss3-*.tar.gz
+
+  build-linux:
+    name: Build Linux
+    needs: [unit-tests-macos, unit-tests-linux, integration-tests-macos, integration-tests-linux]
+    runs-on: ubuntu-24.04
+    container:
+      image: swift:6.2-noble
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate version file
+        run: |
+          echo 'let ss3Version = "${{ github.ref_name }}"' > Sources/ss3/Version.generated.swift
+
+      - name: Install Swift Static Linux SDK
+        run: |
+          swift sdk install https://download.swift.org/swift-6.2-release/static-sdk/swift-6.2-RELEASE/swift-6.2-RELEASE_static-linux-0.0.1.artifactbundle.tar.gz
+
+      - name: Build x86_64
+        run: |
+          swift build -c release --swift-sdk x86_64-swift-linux-musl \
+            -Xswiftc -DSS3_VERSION_INJECTED
+
+      - name: Build arm64
+        run: |
+          swift build -c release --swift-sdk aarch64-swift-linux-musl \
+            -Xswiftc -DSS3_VERSION_INJECTED
+
+      - name: Package x86_64
+        run: |
+          tar -czvf ss3-${{ github.ref_name }}-linux-amd64.tar.gz \
+            -C .build/x86_64-swift-linux-musl/release ss3
+
+      - name: Package arm64
+        run: |
+          tar -czvf ss3-${{ github.ref_name }}-linux-arm64.tar.gz \
+            -C .build/aarch64-swift-linux-musl/release ss3
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-binaries
+          path: ss3-*.tar.gz
