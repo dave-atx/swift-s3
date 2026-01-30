@@ -133,6 +133,11 @@ jobs:
           swift sdk install https://download.swift.org/swift-6.2.3-release/static-sdk/swift-6.2.3-RELEASE/swift-6.2.3-RELEASE_static-linux-0.0.1.artifactbundle.tar.gz \
             --checksum f30ec724d824ef43b5546e02ca06a8682dafab4b26a99fbb0e858c347e507a2c
 
+      - name: Install cross-architecture binutils
+        run: |
+          apt-get update
+          apt-get install -y binutils-aarch64-linux-gnu
+
       - name: Build x86_64
         run: |
           swift build -c release --swift-sdk x86_64-swift-linux-musl \
@@ -146,7 +151,7 @@ jobs:
       - name: Strip binaries
         run: |
           strip .build/x86_64-swift-linux-musl/release/ss3
-          strip .build/aarch64-swift-linux-musl/release/ss3
+          aarch64-linux-gnu-strip .build/aarch64-swift-linux-musl/release/ss3
 
       - name: Package x86_64
         run: |
