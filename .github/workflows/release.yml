@@ -143,6 +143,11 @@ jobs:
           swift build -c release --swift-sdk aarch64-swift-linux-musl \
             -Xswiftc -DSS3_VERSION_INJECTED
 
+      - name: Strip binaries
+        run: |
+          strip .build/x86_64-swift-linux-musl/release/ss3
+          strip .build/aarch64-swift-linux-musl/release/ss3
+
       - name: Package x86_64
         run: |
           tar -czvf ss3-${{ github.ref_name }}-linux-amd64.tar.gz \
