@@ -32,6 +32,10 @@ actor MinioTestServer {
             return
         }
 
+        // Kill any orphan minio processes from previous test runs
+        // This prevents conflicts when tests crash or are interrupted
+        Self.killOrphanMinioProcesses()
+
         let minioBinary = findMinioBinary()
         guard FileManager.default.fileExists(atPath: minioBinary) else {
             throw MinioError.binaryNotFound(
@@ -98,7 +102,10 @@ actor MinioTestServer {
 
     /// Polls the minio health endpoint until the server is ready.
     private func waitForReady() async throws {
-        let healthURL = Self.endpointURL.appendingPathComponent("minio/health/live")
+        // Use /minio/health/ready instead of /minio/health/live
+        // "live" only checks if the process is running
+        // "ready" checks if the S3 subsystem is initialized and ready for requests
+        let healthURL = Self.endpointURL.appendingPathComponent("minio/health/ready")
         let maxAttempts = 30
         let delayNanoseconds: UInt64 = 100_000_000 // 100ms
 
@@ -148,6 +155,21 @@ actor MinioTestServer {
 
         // Last resort: return the expected path for error message
         return minioPath
+    }
+
+    /// Kills any orphan minio processes that may be running from previous test runs.
+    /// This is a static helper that runs synchronously before starting a new server.
+    private static func killOrphanMinioProcesses() {
+        let killProcess = Process()
+        killProcess.executableURL = URL(fileURLWithPath: "/usr/bin/pkill")
+        killProcess.arguments = ["-9", "-f", "minio.*server.*--address.*:\(Self.port)"]
+        killProcess.standardOutput = FileHandle.nullDevice
+        killProcess.standardError = FileHandle.nullDevice
+        try? killProcess.run()
+        killProcess.waitUntilExit()
+
+        // Brief pause to let the OS clean up the port binding
+        Thread.sleep(forTimeInterval: 0.1)
     }
 }
 
